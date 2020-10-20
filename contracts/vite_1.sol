@@ -6,7 +6,7 @@ import "openzeppelin-solidity/contracts/cryptography/MerkleProof.sol";
 import "./interfaces.sol";
 
 
-contract ViteProxy is Vite {
+contract ViteProxyV01 is Vite {
     mapping(uint64 => bytes32) public nonceRoot;
 
     address[] public signerArr;
@@ -29,7 +29,7 @@ contract ViteProxy is Vite {
     function txApproved(
         uint64 _viteNonce,
         TxMerkleProof memory _txProof
-    ) public view override returns (bool) {
+    ) public view returns (bool) {
         require(_viteNonce <= viteNonce, "error viteNonce");
         return MerkleProof.verify(_txProof.proof, nonceRoot[_viteNonce], _txProof.txHash);
     }

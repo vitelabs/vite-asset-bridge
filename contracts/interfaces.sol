@@ -55,10 +55,10 @@ interface Vite {
         SigProof calldata sigProof
     ) external;
 
-    function txApproved(
-        uint64 viteNonce,
-        TxMerkleProof calldata txProof
-    ) external view returns (bool);
+//    function txApproved(
+//        uint64 viteNonce,
+//        TxMerkleProof calldata txProof
+//    ) external view returns (bool);
 }
 
 //1. 提交sbp列表，其中高度信息包含在sbp签名的merkle proof中，新的sbp列表也包含在merkle proof中；

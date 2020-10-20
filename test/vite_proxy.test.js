@@ -1,8 +1,9 @@
 const abi = require('ethereumjs-abi')
 const {MerkleTree} = require('merkletreejs')
 const keccak256 = require('keccak256')
-const EthUtil = require('ethereumjs-util');
-const ViteProxy = artifacts.require("ViteProxy");
+const EthUtil = require('ethereumjs-util')
+
+const ViteProxy = artifacts.require("ViteProxyV01");
 
 const buf2hex = x => '0x' + x.toString('hex')
 
@@ -165,6 +166,7 @@ contract('ViteProxy', (accounts) => {
             sigProof.root = tree.getHexRoot();
             sigProof.signatures = sign(sigProof.rootNonce, sigProof.root, sigProof.signers);
             tx.proof = tree.getHexProof(tx.txHash);
+
             await viteProxy.submitProof(sigProof);
         }
 
