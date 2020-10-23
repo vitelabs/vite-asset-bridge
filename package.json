@@ -13,6 +13,7 @@
   "license": "ISC",
   "devDependencies": {
     "@openzeppelin/contracts": "3.1.0",
+    "artifacts": "^0.0.1",
     "chai": "^4.2.0",
     "eth-object": "^1.0.3",
     "eth-util-lite": "^1.0.1",
