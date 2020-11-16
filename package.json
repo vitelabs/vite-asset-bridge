@@ -7,12 +7,13 @@
     "test": "test"
   },
   "scripts": {
-    "test": "./node_modules/.bin/mocha --timeout 25000"
+    "test": "./node_modules/.bin/mocha --timeout 50000"
   },
   "author": "viteshan <wangjie@vite.org>",
   "license": "ISC",
   "devDependencies": {
     "@openzeppelin/contracts": "3.1.0",
+    "@rainblock/merkle-patricia-tree": "^4.9.0",
     "artifacts": "^0.0.1",
     "chai": "^4.2.0",
     "eth-object": "^1.0.3",

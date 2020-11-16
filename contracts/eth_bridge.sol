@@ -10,10 +10,9 @@ contract EthBridge {
     mapping(uint256 => ethHeader) public history;
 
     // all pending headers, and headers with height less than the latest height will be deleted
-    // mapping(uint256 => ethHeader[]) unconfirmed;
-
     mapping(uint256 => mapping(bytes32 => ethHeader)) public unconfirmed;
-
+    mapping(uint256 => bytes32[]) public unconfirmedIdx;
+    
     // any header less than this difficulty will not be submitted successfully
     uint256 public leastDifficulty;
     uint256 public maxDifficulty;
@@ -28,7 +27,7 @@ contract EthBridge {
         uint256 totalDifficulty;
         bytes32 receiptRoot;
     }
-
+    
     ethHeader tmp;
 
     constructor() public {}
@@ -128,6 +127,7 @@ contract EthBridge {
             receiptRoot: _receiptRoot
         });
         unconfirmed[_height][_hash] = tmp;
+        unconfirmedIdx[_height].push(_hash);
 
         // check difficulty consensus
         if (_totalDifficulty <= maxDifficulty) {
@@ -160,6 +160,12 @@ contract EthBridge {
     {
         latest = unconfirmed[latestHeight][latestHash];
         history[latestHeight] = latest;
+        
+        uint256 len = unconfirmedIdx[latestHeight].length;
+        for (uint256 i = 0; i < len; i++) {
+            delete unconfirmed[latestHeight][unconfirmedIdx[latestHeight][i]];
+        }
+        delete unconfirmedIdx[latestHeight];
     }
 
     // 0: not found
@@ -213,19 +219,10 @@ contract EthBridge {
         internal
         pure
     {
-        bytes32 _headerHash = keccak256(RLP.encodeList(_headers));
+        bytes32 _headerHash = keccak256(RLPEncoder.encodeList(_headers));
         require(_headerHash == _hash, "hash verified");
     }
 
-    // function bytesToUint256(bytes memory _bytes)
-    //     internal
-    //     pure
-    //     returns (uint256 value)
-    // {
-    //     assembly {
-    //         value := mload(add(_bytes, 0x20))
-    //     }
-    // }
     function bytesToUint256(bytes memory bs) internal pure returns (uint256) {
         uint256 len = bs.length;
         uint256 result;
@@ -240,14 +237,6 @@ contract EthBridge {
         return result;
     }
 
-    // function bytesToUint256(bytes memory b) public returns (uint256){
-    //     uint256 number;
-    //     for(uint i=0;i<b.length;i++){
-    //         number = number + uint(b[i])*(2**(8*(b.length-(i+1))));
-    //     }
-    //     return number;
-    // }
-
     function bytesToBytes32(bytes memory _bytes)
         internal
         pure
@@ -261,4 +250,61 @@ contract EthBridge {
             value := mload(add(_bytes, 32))
         }
     }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    // -----------------------------------------------------------
+    // -----------------------------------------------------------
+    // -----------------------------------------------------------
+    // -----------------------------------------------------------
+    // -----------------------------------------------------------
+    // -----------------------------------------------------------
+    // -----------------------------------------------------------
+    // -----------------------------------------------------------
+    
+    
+    function deposit() public {
+        
+    }
+    
+    
+    function proof() public {
+        
+    }
+
+    function receipt(bytes[] memory logs, 
+    bytes memory status,
+    bytes memory cumulativeGas, 
+    bytes memory logsBloom
+    ) public returns(bytes memory){
+        bytes memory rlpLogs = RLPEncoder.encodeList(logs);
+        bytes[] memory receipt = new bytes[](4);
+        receipt[0] = status;
+        receipt[1] = cumulativeGas;
+        receipt[2] = logsBloom;
+        receipt[3] = rlpLogs;
+
+        return RLPEncoder.encodeList(receipt);
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 }
