@@ -39,6 +39,56 @@ contract Tools {
 
     event Deposit(uint256 indexed from, uint256 indexed to, uint256 amount);
 
+    function verifyReceipt(
+        bytes32 root,
+        bytes memory encodedPath,
+        bytes memory rlpParentNodes,
+        bytes memory status,
+        bytes memory cumulativeGas,
+        bytes memory logsBloom,
+        bytes[] memory logs
+    ) public returns (bool) {
+        bytes memory value = buildReceipt(
+            status,
+            cumulativeGas,
+            logsBloom,
+            logs
+        );
+
+        require(
+            MerklePatriciaProof.verify(
+                value,
+                encodedPath,
+                rlpParentNodes,
+                root
+            ),
+            "receipt proof"
+        );
+        return true;
+    }
+
+    function buildReceipt(
+        bytes memory status,
+        bytes memory cumulativeGas,
+        bytes memory logsBloom,
+        bytes[] memory logs
+    ) public returns (bytes memory) {
+        bool[] memory logsFlags = new bool[](logs.length);
+        bytes memory rlpLogs = RLPEncoder.encodeListBloom(logs, logsFlags);
+        bytes[] memory receipt = new bytes[](4);
+        receipt[0] = status;
+        receipt[1] = cumulativeGas;
+        receipt[2] = logsBloom;
+        receipt[3] = rlpLogs;
+
+        bool[] memory receiptFlags = new bool[](4);
+        receiptFlags[0] = true;
+        receiptFlags[1] = true;
+        receiptFlags[2] = true;
+
+        return RLPEncoder.encodeListBloom(receipt, receiptFlags);
+    }
+
     function receiptBuild(
         bytes memory status,
         bytes memory cumulativeGas,

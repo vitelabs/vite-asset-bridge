@@ -2,6 +2,7 @@ pragma solidity ^0.6.3;
 pragma experimental ABIEncoderV2;
 
 import "./rlp.sol";
+import "./merkle_patricia_proof.sol";
 
 contract EthBridge {
     // the latest confirmed header
@@ -12,7 +13,7 @@ contract EthBridge {
     // all pending headers, and headers with height less than the latest height will be deleted
     mapping(uint256 => mapping(bytes32 => ethHeader)) public unconfirmed;
     mapping(uint256 => bytes32[]) public unconfirmedIdx;
-    
+
     // any header less than this difficulty will not be submitted successfully
     uint256 public leastDifficulty;
     uint256 public maxDifficulty;
@@ -27,7 +28,7 @@ contract EthBridge {
         uint256 totalDifficulty;
         bytes32 receiptRoot;
     }
-    
+
     ethHeader tmp;
 
     constructor() public {}
@@ -160,7 +161,7 @@ contract EthBridge {
     {
         latest = unconfirmed[latestHeight][latestHash];
         history[latestHeight] = latest;
-        
+
         uint256 len = unconfirmedIdx[latestHeight].length;
         for (uint256 i = 0; i < len; i++) {
             delete unconfirmed[latestHeight][unconfirmedIdx[latestHeight][i]];
@@ -250,15 +251,7 @@ contract EthBridge {
             value := mload(add(_bytes, 32))
         }
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     // -----------------------------------------------------------
     // -----------------------------------------------------------
     // -----------------------------------------------------------
@@ -267,44 +260,138 @@ contract EthBridge {
     // -----------------------------------------------------------
     // -----------------------------------------------------------
     // -----------------------------------------------------------
-    
-    
-    function deposit() public {
-        
-    }
-    
-    
-    function proof() public {
-        
+
+    mapping(bytes32 => mapping(bytes32 => bool)) deposited;
+
+
+    function deposit(
+        uint256 blockHeight,
+        bytes32 root,
+        bytes memory encodedPath,
+        bytes memory rlpParentNodes,
+        bytes memory status,
+        bytes memory cumulativeGas,
+        bytes memory logsBloom,
+        bytes[] memory logs,
+        uint256 logIdx
+    ) public {
+        require(blockHeight<=latest.height, "block height required");
+        require(history[blockHeight].receiptRoot == root, "block receipt root required");
+
+        bytes32 path = keccak256(encodedPath);
+        require(!deposited[root][path], "duplicated deposit");
+        deposited[root][path] = true;
+
+        verifyReceipt(
+            root,
+            encodedPath,
+            rlpParentNodes,
+            status,
+            cumulativeGas,
+            logsBloom,
+            logs
+        );
+
+        processLog(logs[logIdx]);
     }
 
-    function receipt(bytes[] memory logs, 
-    bytes memory status,
-    bytes memory cumulativeGas, 
-    bytes memory logsBloom
-    ) public returns(bytes memory){
-        bytes memory rlpLogs = RLPEncoder.encodeList(logs);
+    function verifyReceipt(
+        bytes32 root,
+        bytes memory encodedPath,
+        bytes memory rlpParentNodes,
+        bytes memory status,
+        bytes memory cumulativeGas,
+        bytes memory logsBloom,
+        bytes[] memory logs
+    ) public pure {
+        bytes memory value = buildReceipt(
+            status,
+            cumulativeGas,
+            logsBloom,
+            logs
+        );
+
+        require(
+            MerklePatriciaProof.verify(
+                value,
+                encodedPath,
+                rlpParentNodes,
+                root
+            ),
+            "receipt proof"
+        );
+    }
+
+    function buildReceipt(
+        bytes memory status,
+        bytes memory cumulativeGas,
+        bytes memory logsBloom,
+        bytes[] memory logs
+    ) public pure returns (bytes memory) {
+        bool[] memory logsFlags = new bool[](logs.length);
+        bytes memory rlpLogs = RLPEncoder.encodeListBloom(logs, logsFlags);
         bytes[] memory receipt = new bytes[](4);
         receipt[0] = status;
         receipt[1] = cumulativeGas;
         receipt[2] = logsBloom;
         receipt[3] = rlpLogs;
 
-        return RLPEncoder.encodeList(receipt);
+        bool[] memory receiptFlags = new bool[](4);
+        receiptFlags[0] = true;
+        receiptFlags[1] = true;
+        receiptFlags[2] = true;
+
+        return RLPEncoder.encodeListBloom(receipt, receiptFlags);
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+    event Deposit(uint256, uint256, uint256, uint256);
+
+    function processLog(bytes memory log) public {
+        uint256 token;
+        uint256 from;
+        uint256 to;
+        uint256 amount;
+        (token, from, to, amount) = parseLog(log);
+        emit Deposit(token, from, to, amount);
+    }
+
+    // Token,From,To,Amount
+    function parseLog(bytes memory log)
+        public
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        RLP.RLPItem memory item = RLP.toRLPItem(log);
+        RLP.RLPItem[] memory args = RLP.toList(item);
+
+        require(args.length == 3, "log args length");
+        require(
+            BytesLib.bytesEquals(
+                RLP.toBytes(args[0]),
+                bytes(hex"021576770cb3729716ccfb687afdb4c6bf720cb6")
+            ),
+            "log address required"
+        );
+        RLP.RLPItem[] memory topics = RLP.toList(args[1]);
+        require(topics.length == 3, "log topics length");
+        require(
+            BytesLib.bytesEquals(
+                RLP.toBytes(topics[0]),
+                bytes(
+                    hex"ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+                )
+            ),
+            "log name required"
+        );
+        return (
+            0,
+            RLP.toUint(topics[1]),
+            RLP.toUint(topics[2]),
+            RLP.toUint(args[2])
+        );
+    }
 }

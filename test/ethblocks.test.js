@@ -91,95 +91,96 @@ describe('eth block proof', () => {
     //     }
     // });
 
-    // it('receipt proof verify', async () => {
-    //     try {
-    //         // const tx = await web3.eth.getTransaction('0x92e94b3ac35eb7a34fde6d4b24337f7c6db2ede68e2b564b81ff4b0fe4d7a8f3');
-    //         // console.log(tx);
+    it('receipt proof verify', async () => {
+        try {
+            // const tx = await web3.eth.getTransaction('0x92e94b3ac35eb7a34fde6d4b24337f7c6db2ede68e2b564b81ff4b0fe4d7a8f3');
+            // console.log(tx);
 
-    //         // const receipt = await web3.eth.getTransactionReceipt('0x92e94b3ac35eb7a34fde6d4b24337f7c6db2ede68e2b564b81ff4b0fe4d7a8f3');
-    //         // console.log(JSON.stringify(receipt));
+            // const receipt = await web3.eth.getTransactionReceipt('0x92e94b3ac35eb7a34fde6d4b24337f7c6db2ede68e2b564b81ff4b0fe4d7a8f3');
+            // console.log(JSON.stringify(receipt));
 
-    //         let blockHash = '0x4a419022aa83efd6332ac4a0a0b5be84591a025e73a33086fe918b03bc11de41';
-    //         const block = await web3.eth.getBlock(blockHash);
-    //         let receipts = await Promise.all(block.transactions.map((txHash) => {
-    //             return web3.eth.getTransactionReceipt(txHash)
-    //         }));
+            let blockHash = '0x4a419022aa83efd6332ac4a0a0b5be84591a025e73a33086fe918b03bc11de41';
+            const block = await web3.eth.getBlock(blockHash);
+            let receipts = await Promise.all(block.transactions.map((txHash) => {
+                return web3.eth.getTransactionReceipt(txHash)
+            }));
 
-    //         let trie = new Trie();
+            let trie = new Trie();
 
-    //         let tree = new MerklePatriciaTree();
-    //         await Promise.all(receipts.map((receipt) => {
-    //             receipt.status = receipt.status ? 1 : 0;
-    //             let logs = []
-    //             for (let i = 0; i < receipt.logs.length; i++) {
-    //                 logs.push(
-    //                     [
-    //                         receipt.logs[i].address,
-    //                         receipt.logs[i].topics,
-    //                         receipt.logs[i].data
-    //                     ]
-    //                 )
-    //             }
-    //             const raw = RLP.encode([
-    //                 toBuffer(receipt.status || undefined),
-    //                 toBuffer(receipt.cumulativeGasUsed),
-    //                 receipt.logsBloom,
-    //                 logs
-    //             ]);
-    //             const serialize = Receipt.fromRpc(receipt).serialize();
-    //             assert.equal(bufferToHex(raw), bufferToHex(serialize));
+            let tree = new MerklePatriciaTree();
+            await Promise.all(receipts.map((receipt) => {
+                receipt.status = receipt.status ? 1 : 0;
+                let logs = []
+                for (let i = 0; i < receipt.logs.length; i++) {
+                    logs.push(
+                        [
+                            receipt.logs[i].address,
+                            receipt.logs[i].topics,
+                            receipt.logs[i].data
+                        ]
+                    )
+                }
+                const raw = RLP.encode([
+                    toBuffer(receipt.status || undefined),
+                    toBuffer(receipt.cumulativeGasUsed),
+                    receipt.logsBloom,
+                    logs
+                ]);
+                const serialize = Receipt.fromRpc(receipt).serialize();
+                assert.equal(bufferToHex(raw), bufferToHex(serialize));
 
-    //             return trie.put(encode(receipt.transactionIndex), raw);
-    //         }));
-    //         assert.equal(bufferToHex(trie.root), block.receiptsRoot);
-    //         // for (let i = 0; i < receipts.length; i++) {
-    //         //     const proofs = await Trie.createProof(trie, encode(i));
-    //         //     console.log(i, proofs.length, '----------------');
-    //         //     // console.log(proofs[0]);
-    //         //     // console.log(proofs[1]);
-    //         //     // console.log(proofs[2]);
-    //         //     // assert.equal(bufferToHex(keccak256(RLP.encode(proofs))), bufferToHex(trie.root));
-    //         //     const key = await Trie.verifyProof(trie.root, encode(i), proofs);
-    //         //     assert.equal(bufferToHex(key), bufferToHex(Receipt.fromRpc(receipts[i]).serialize()));
-    //         //     assert.isTrue(verify(encode(i).toString('hex'), key, encode(proofs), trie.root));
-    //         // }
-    //     } catch (e) {
-    //         console.error(e);
-    //         assert.fail();
+                return trie.put(encode(receipt.transactionIndex), raw);
+            }));
+            assert.equal(bufferToHex(trie.root), block.receiptsRoot);
+            // for (let i = 0; i < receipts.length; i++) {
+            const proofs = await Trie.createProof(trie, encode(202));
+            console.log(bufferToHex(RLP.encode(proofs)));
+            //     console.log(i, proofs.length, '----------------');
+            //     // console.log(proofs[0]);
+            //     // console.log(proofs[1]);
+            //     // console.log(proofs[2]);
+            //     // assert.equal(bufferToHex(keccak256(RLP.encode(proofs))), bufferToHex(trie.root));
+            //     const key = await Trie.verifyProof(trie.root, encode(i), proofs);
+            //     assert.equal(bufferToHex(key), bufferToHex(Receipt.fromRpc(receipts[i]).serialize()));
+            //     assert.isTrue(verify(encode(i).toString('hex'), key, encode(proofs), trie.root));
+            // }
+        } catch (e) {
+            console.error(e);
+            assert.fail();
+        }
+    });
+
+    // it('receipt ', async () => {
+    //     const receipt = await web3.eth.getTransactionReceipt('0x0aafe6194bec66ca9e85cd578233e91709f2325db979c9134efdad60f3cbbad6')
+    //     receipt.status = receipt.status ? 1 : 0;
+    //     let logs = []
+    //     for (let i = 0; i < receipt.logs.length; i++) {
+    //         const log = [
+    //             receipt.logs[i].address,
+    //             receipt.logs[i].topics,
+    //             receipt.logs[i].data
+    //         ]
+    //         logs.push(log);
+
+    //         console.log('receipt',i,bufferToHex(RLP.encode(log)));
     //     }
+    //     const raw = RLP.encode([
+    //         toBuffer(receipt.status || undefined),
+    //         toBuffer(receipt.cumulativeGasUsed),
+    //         receipt.logsBloom,
+    //         logs
+    //     ]);
+    //     const serialize = Receipt.fromRpc(receipt).serialize();
+
+    //     console.log(bufferToHex(serialize));
     // });
 
-    it('receipt ', async () => {
-        const receipt = await web3.eth.getTransactionReceipt('0x0aafe6194bec66ca9e85cd578233e91709f2325db979c9134efdad60f3cbbad6')
-        receipt.status = receipt.status ? 1 : 0;
-        let logs = []
-        for (let i = 0; i < receipt.logs.length; i++) {
-            const log = [
-                receipt.logs[i].address,
-                receipt.logs[i].topics,
-                receipt.logs[i].data
-            ]
-            logs.push(log);
-
-            console.log('receipt',i,bufferToHex(RLP.encode(log)));
-        }
-        const raw = RLP.encode([
-            toBuffer(receipt.status || undefined),
-            toBuffer(receipt.cumulativeGasUsed),
-            receipt.logsBloom,
-            logs
-        ]);
-        const serialize = Receipt.fromRpc(receipt).serialize();
-
-        console.log(bufferToHex(serialize));
-    });
-
-    it('receipt 2', async() =>{
-        const arr = RLP.decode(toBuffer('0xf906710183aa0943b9010010204000000000000004000080000000000000000000000000010000000000000000000000000000000000000000000202000000080000000000000000280000000000000000000008000008000002600000000000040000000000000000000000000000200000000000000000004000000000000000000000000010000000000000000000000000004000000000000800000000010000080000004000000000020000000000200200000000000010000000000000000000000000000000000040000802000000000000002000000000000000000000001000000000000020000018200000000000000000000000000000000000000000000000000000000000f90566f89b94021576770cb3729716ccfb687afdb4c6bf720cb6f863a0ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3efa0000000000000000000000000efd0199657b444856e3259ed8e3c39ee43cf51dca0000000000000000000000000e3e15b09e1a8cb96032690448a18173b170a8d5ca0000000000000000000000000000000000000000000000001962cde83c99ac832f89b94021576770cb3729716ccfb687afdb4c6bf720cb6f863a08c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925a0000000000000000000000000efd0199657b444856e3259ed8e3c39ee43cf51dca00000000000000000000000007a250d5630b4cf539739df2c5dacb4c659f2488da0fffffffffffffffffffffffffffffffffffffffffffffffa4fbcd49f75a5945af89b94c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2f863a0ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3efa0000000000000000000000000e3e15b09e1a8cb96032690448a18173b170a8d5ca0000000000000000000000000b4e16d0168e52d35cacd2c6185b44281ec28c9dca000000000000000000000000000000000000000000000000003bc43ef4c08a8e6f87994e3e15b09e1a8cb96032690448a18173b170a8d5ce1a01c411e9a96e071241c2f21f7726b17ae89e3cab4c78be50e062b03a9fffbbad1b84000000000000000000000000000000000000000000000017bf9d63930dacb54b00000000000000000000000000000000000000000000000037d876b38ca168e53f8fc94e3e15b09e1a8cb96032690448a18173b170a8d5cf863a0d78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822a00000000000000000000000007a250d5630b4cf539739df2c5dacb4c659f2488da0000000000000000000000000b4e16d0168e52d35cacd2c6185b44281ec28c9dcb880000000000000000000000000000000000000000000000001962cde83c99ac8320000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003bc43ef4c08a8e6f89b94a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48f863a0ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3efa0000000000000000000000000b4e16d0168e52d35cacd2c6185b44281ec28c9dca0000000000000000000000000efd0199657b444856e3259ed8e3c39ee43cf51dca000000000000000000000000000000000000000000000000000000000061437acf87994b4e16d0168e52d35cacd2c6185b44281ec28c9dce1a01c411e9a96e071241c2f21f7726b17ae89e3cab4c78be50e062b03a9fffbbad1b84000000000000000000000000000000000000000000000000000010c295dbacc7300000000000000000000000000000000000000000000a44929ecfbcd22a6264bf8fc94b4e16d0168e52d35cacd2c6185b44281ec28c9dcf863a0d78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822a00000000000000000000000007a250d5630b4cf539739df2c5dacb4c659f2488da0000000000000000000000000efd0199657b444856e3259ed8e3c39ee43cf51dcb880000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003bc43ef4c08a8e600000000000000000000000000000000000000000000000000000000061437ac0000000000000000000000000000000000000000000000000000000000000000'));
-        console.log(bufferToHex(arr[0]));
-        console.log(bufferToHex(arr[1]));
-        console.log(bufferToHex(arr[2]));
-    });
+    // it('receipt 2', async() =>{
+    //     const arr = RLP.decode(toBuffer('0xf906710183aa0943b9010010204000000000000004000080000000000000000000000000010000000000000000000000000000000000000000000202000000080000000000000000280000000000000000000008000008000002600000000000040000000000000000000000000000200000000000000000004000000000000000000000000010000000000000000000000000004000000000000800000000010000080000004000000000020000000000200200000000000010000000000000000000000000000000000040000802000000000000002000000000000000000000001000000000000020000018200000000000000000000000000000000000000000000000000000000000f90566f89b94021576770cb3729716ccfb687afdb4c6bf720cb6f863a0ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3efa0000000000000000000000000efd0199657b444856e3259ed8e3c39ee43cf51dca0000000000000000000000000e3e15b09e1a8cb96032690448a18173b170a8d5ca0000000000000000000000000000000000000000000000001962cde83c99ac832f89b94021576770cb3729716ccfb687afdb4c6bf720cb6f863a08c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925a0000000000000000000000000efd0199657b444856e3259ed8e3c39ee43cf51dca00000000000000000000000007a250d5630b4cf539739df2c5dacb4c659f2488da0fffffffffffffffffffffffffffffffffffffffffffffffa4fbcd49f75a5945af89b94c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2f863a0ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3efa0000000000000000000000000e3e15b09e1a8cb96032690448a18173b170a8d5ca0000000000000000000000000b4e16d0168e52d35cacd2c6185b44281ec28c9dca000000000000000000000000000000000000000000000000003bc43ef4c08a8e6f87994e3e15b09e1a8cb96032690448a18173b170a8d5ce1a01c411e9a96e071241c2f21f7726b17ae89e3cab4c78be50e062b03a9fffbbad1b84000000000000000000000000000000000000000000000017bf9d63930dacb54b00000000000000000000000000000000000000000000000037d876b38ca168e53f8fc94e3e15b09e1a8cb96032690448a18173b170a8d5cf863a0d78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822a00000000000000000000000007a250d5630b4cf539739df2c5dacb4c659f2488da0000000000000000000000000b4e16d0168e52d35cacd2c6185b44281ec28c9dcb880000000000000000000000000000000000000000000000001962cde83c99ac8320000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003bc43ef4c08a8e6f89b94a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48f863a0ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3efa0000000000000000000000000b4e16d0168e52d35cacd2c6185b44281ec28c9dca0000000000000000000000000efd0199657b444856e3259ed8e3c39ee43cf51dca000000000000000000000000000000000000000000000000000000000061437acf87994b4e16d0168e52d35cacd2c6185b44281ec28c9dce1a01c411e9a96e071241c2f21f7726b17ae89e3cab4c78be50e062b03a9fffbbad1b84000000000000000000000000000000000000000000000000000010c295dbacc7300000000000000000000000000000000000000000000a44929ecfbcd22a6264bf8fc94b4e16d0168e52d35cacd2c6185b44281ec28c9dcf863a0d78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822a00000000000000000000000007a250d5630b4cf539739df2c5dacb4c659f2488da0000000000000000000000000efd0199657b444856e3259ed8e3c39ee43cf51dcb880000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003bc43ef4c08a8e600000000000000000000000000000000000000000000000000000000061437ac0000000000000000000000000000000000000000000000000000000000000000'));
+    //     console.log(bufferToHex(arr[0]));
+    //     console.log(bufferToHex(arr[1]));
+    //     console.log(bufferToHex(arr[0]));
+    // });
 
 
     // it('receipt hash verify2', async () => {
