@@ -39,14 +39,16 @@ contract EthBridge {
         uint256 _totalDifficulty,
         uint256 _confirmedThreshold,
         bytes32 _hash,
-        bytes[] memory _headers
+        bytes memory _headersRaw
     ) public {
-        verifyHeader(_hash, _headers);
+        verifyHeader(_hash, _headersRaw);
 
-        uint256 _height = bytesToUint256(_headers[8]);
-        bytes32 _parentHash = bytesToBytes32(_headers[0]);
-        uint256 _difficulty = bytesToUint256(_headers[7]);
-        bytes32 _receiptRoot = bytesToBytes32(_headers[5]);
+        RLP.RLPItem[] memory _headers = RLP.toList(RLP.toRLPItem(_headersRaw));
+
+        uint256 _height = RLP.toUint(_headers[8]);
+        bytes32 _parentHash = RLP.toBytes32(_headers[0]);
+        uint256 _difficulty = RLP.toUint(_headers[7]);
+        bytes32 _receiptRoot = RLP.toBytes32(_headers[5]);
         _init(
             _leastDifficulty,
             _totalDifficulty,
@@ -83,12 +85,16 @@ contract EthBridge {
         maxDifficulty = latest.totalDifficulty;
     }
 
-    function submitHeader(bytes32 _hash, bytes[] memory _headers) public {
-        verifyHeader(_hash, _headers);
-        uint256 _height = bytesToUint256(_headers[8]);
-        bytes32 _parentHash = bytesToBytes32(_headers[0]);
-        uint256 _difficulty = bytesToUint256(_headers[7]);
-        bytes32 _receiptRoot = bytesToBytes32(_headers[5]);
+    function submitHeader(bytes32 _hash, bytes memory _headersRaw) public {
+        verifyHeader(_hash, _headersRaw);
+
+        RLP.RLPItem[] memory _headers = RLP.toList(RLP.toRLPItem(_headersRaw));
+
+        uint256 _height = RLP.toUint(_headers[8]);
+        bytes32 _parentHash = RLP.toBytes32(_headers[0]);
+        uint256 _difficulty = RLP.toUint(_headers[7]);
+        bytes32 _receiptRoot = RLP.toBytes32(_headers[5]);
+
         _submitHeader(_hash, _height, _parentHash, _difficulty, _receiptRoot);
     }
 
@@ -216,11 +222,8 @@ contract EthBridge {
         }
     }
 
-    function verifyHeader(bytes32 _hash, bytes[] memory _headers)
-        internal
-        pure
-    {
-        bytes32 _headerHash = keccak256(RLPEncoder.encodeList(_headers));
+    function verifyHeader(bytes32 _hash, bytes memory _headers) internal pure {
+        bytes32 _headerHash = keccak256(_headers);
         require(_headerHash == _hash, "hash verified");
     }
 
@@ -263,6 +266,21 @@ contract EthBridge {
 
     mapping(bytes32 => mapping(bytes32 => bool)) deposited;
 
+    function _deposit(bytes memory argsRaw) public {
+        RLP.RLPItem[] memory args = RLP.toList(RLP.toRLPItem(argsRaw));
+
+        deposit(
+            RLP.toUint(args[0]),
+            RLP.toBytes32(args[1]),
+            RLP.toBytes(args[2]),
+            RLP.toBytes(args[3]),
+            RLP.toBytes(args[4]),
+            RLP.toBytes(args[5]),
+            RLP.toBytes(args[6]),
+            RLP.toBytes(args[7]),
+            RLP.toUint(args[8])
+        );
+    }
 
     function deposit(
         uint256 blockHeight,
@@ -272,15 +290,10 @@ contract EthBridge {
         bytes memory status,
         bytes memory cumulativeGas,
         bytes memory logsBloom,
-        bytes[] memory logs,
+        bytes memory logsRaw,
         uint256 logIdx
     ) public {
-        require(blockHeight<=latest.height, "block height required");
-        require(history[blockHeight].receiptRoot == root, "block receipt root required");
-
-        bytes32 path = keccak256(encodedPath);
-        require(!deposited[root][path], "duplicated deposit");
-        deposited[root][path] = true;
+        requireBasic(blockHeight, root, encodedPath);
 
         verifyReceipt(
             root,
@@ -289,10 +302,26 @@ contract EthBridge {
             status,
             cumulativeGas,
             logsBloom,
-            logs
+            logsRaw
         );
 
-        processLog(logs[logIdx]);
+        processLog(logsRaw, logIdx);
+    }
+
+    function requireBasic(
+        uint256 blockHeight,
+        bytes32 root,
+        bytes memory encodedPath
+    ) internal {
+        require(blockHeight <= latest.height, "block height required");
+        require(
+            history[blockHeight].receiptRoot == root,
+            "block receipt root required"
+        );
+
+        bytes32 path = keccak256(encodedPath);
+        require(!deposited[root][path], "duplicated deposit");
+        deposited[root][path] = true;
     }
 
     function verifyReceipt(
@@ -302,13 +331,13 @@ contract EthBridge {
         bytes memory status,
         bytes memory cumulativeGas,
         bytes memory logsBloom,
-        bytes[] memory logs
+        bytes memory logsRaw
     ) public pure {
         bytes memory value = buildReceipt(
             status,
             cumulativeGas,
             logsBloom,
-            logs
+            logsRaw
         );
 
         require(
@@ -326,15 +355,13 @@ contract EthBridge {
         bytes memory status,
         bytes memory cumulativeGas,
         bytes memory logsBloom,
-        bytes[] memory logs
+        bytes memory logsRaw
     ) public pure returns (bytes memory) {
-        bool[] memory logsFlags = new bool[](logs.length);
-        bytes memory rlpLogs = RLPEncoder.encodeListBloom(logs, logsFlags);
         bytes[] memory receipt = new bytes[](4);
         receipt[0] = status;
         receipt[1] = cumulativeGas;
         receipt[2] = logsBloom;
-        receipt[3] = rlpLogs;
+        receipt[3] = logsRaw;
 
         bool[] memory receiptFlags = new bool[](4);
         receiptFlags[0] = true;
@@ -346,7 +373,10 @@ contract EthBridge {
 
     event Deposit(uint256, uint256, uint256, uint256);
 
-    function processLog(bytes memory log) public {
+    function processLog(bytes memory logsRaw, uint256 logIdx) public {
+        RLP.RLPItem[] memory logs = RLP.toList(RLP.toRLPItem(logsRaw));
+
+        RLP.RLPItem memory log = logs[logIdx];
         uint256 token;
         uint256 from;
         uint256 to;
@@ -356,7 +386,7 @@ contract EthBridge {
     }
 
     // Token,From,To,Amount
-    function parseLog(bytes memory log)
+    function parseLog(RLP.RLPItem memory log)
         public
         returns (
             uint256,
@@ -365,8 +395,7 @@ contract EthBridge {
             uint256
         )
     {
-        RLP.RLPItem memory item = RLP.toRLPItem(log);
-        RLP.RLPItem[] memory args = RLP.toList(item);
+        RLP.RLPItem[] memory args = RLP.toList(log);
 
         require(args.length == 3, "log args length");
         require(

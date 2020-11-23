@@ -1,4 +1,5 @@
 pragma solidity ^0.6.0;
+pragma experimental ABIEncoderV2; // todo delete
 
 library RLPEncoder {
     function encodeList(bytes[] memory arr)
@@ -228,6 +229,15 @@ library RLP {
     {
         return bytes32(toUint(self));
     }
+
+    function toUint256(RLPItem memory self)
+        internal 
+        pure
+        returns (uint256 data)
+    {
+        return uint256(toUint(self));
+    }
+
 
     function toUint(RLPItem memory item) internal pure returns (uint256) {
         require(item.len > 0 && item.len <= 33);
