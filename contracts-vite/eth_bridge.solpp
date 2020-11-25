@@ -1,0 +1,1011 @@
+pragma soliditypp ^0.4.2;
+pragma experimental ABIEncoderV2;
+
+contract EthBridge {
+    function convert(ethHeader memory t)internal view returns (uint256, bytes32, bytes32, uint256, bytes32){
+        return (t.height,t.headerHash, t.parentHash, t.totalDifficulty, t.receiptRoot);
+    }
+
+    getter getHistory(uint256 height) returns (uint256, bytes32, bytes32, uint256, bytes32){
+        ethHeader memory t  = history[height];
+        return convert(t);
+    }
+
+    getter getLatestB() returns (uint256, bytes32, bytes32, uint256, bytes32){
+        return convert(latest);
+    }
+
+    // the latest confirmed header
+    ethHeader public latest;
+    // all confirmed header, and these can be used as proof
+    mapping(uint256 => ethHeader) public history;
+
+    // all pending headers, and headers with height less than the latest height will be deleted
+    mapping(uint256 => mapping(bytes32 => ethHeader)) public unconfirmed;
+    mapping(uint256 => bytes32[]) public unconfirmedIdx;
+
+    // any header less than this difficulty will not be submitted successfully
+    uint256 public leastDifficulty;
+    uint256 public maxDifficulty;
+
+    // confirmed num
+    uint256 public confirmedThreshold;
+
+    struct ethHeader {
+        uint256 height;
+        bytes32 headerHash;
+        bytes32 parentHash;
+        uint256 totalDifficulty;
+        bytes32 receiptRoot;
+    }
+
+    ethHeader tmp;
+
+    constructor() public {}
+
+    // todo  init -> constructor
+    onMessage init(
+        uint256 _leastDifficulty,
+        uint256 _totalDifficulty,
+        uint256 _confirmedThreshold,
+        bytes32 _hash,
+        bytes calldata _headersRaw
+    ) {
+        require(latest.height == 0, "init once");
+        verifyHeader(_hash, _headersRaw);
+
+        RLPItem[] memory _headers =toList(toRLPItem(_headersRaw));
+        
+        
+        uint256 _height =toUint(_headers[8]);
+        bytes32 _parentHash =toBytes32(_headers[0]);
+        uint256 _difficulty =toUint(_headers[7]);
+        bytes32 _receiptRoot =toBytes32(_headers[5]);
+
+        _init(
+            _leastDifficulty,
+            _totalDifficulty,
+            _confirmedThreshold,
+            _hash,
+            _height,
+            _parentHash,
+            _difficulty,
+            _receiptRoot
+        );
+    }
+
+    // todo public -> internal
+    function _init(
+        uint256 _leastDifficulty,
+        uint256 _totalDifficulty,
+        uint256 _confirmedThreshold,
+        bytes32 _hash,
+        uint256 _height,
+        bytes32 _parentHash,
+        uint256 _difficulty,
+        bytes32 _receiptRoot
+    ) public {
+        leastDifficulty = _leastDifficulty;
+        confirmedThreshold = _confirmedThreshold;
+        latest = ethHeader({
+            height: _height,
+            headerHash: _hash,
+            parentHash: _parentHash,
+            totalDifficulty: _totalDifficulty + _difficulty,
+            receiptRoot: _receiptRoot
+        });
+        history[latest.height] = latest;
+        maxDifficulty = latest.totalDifficulty;
+    }
+
+    onMessage submitHeader(bytes32 _hash, bytes calldata _headersRaw) {
+        verifyHeader(_hash, _headersRaw);
+
+        RLPItem[] memory _headers =toList(toRLPItem(_headersRaw));
+
+        uint256 _height =toUint(_headers[8]);
+        bytes32 _parentHash =toBytes32(_headers[0]);
+        uint256 _difficulty =toUint(_headers[7]);
+        bytes32 _receiptRoot =toBytes32(_headers[5]);
+
+        _submitHeader(_hash, _height, _parentHash, _difficulty, _receiptRoot);
+    }
+
+    // todo public -> internal
+    function _submitHeader(
+        bytes32 _hash,
+        uint256 _height,
+        bytes32 _parentHash,
+        uint256 _difficulty,
+        bytes32 _receiptRoot
+    ) public {
+        require(_difficulty > leastDifficulty, "least difficulty check");
+        require(_height > latest.height, "height require");
+
+        int256 found = findHeader(_height, _hash);
+        require(found == 0, "duplicated header");
+
+        found = findHeader(_height - 1, _parentHash);
+        require(found > 0, "parent header not found");
+
+        uint256 _totalDifficulty = 0;
+        if (found == 1) {
+            _totalDifficulty = latest.totalDifficulty + _difficulty;
+        } else if (found == 2) {
+            _totalDifficulty =
+                unconfirmed[_height - 1][_parentHash].totalDifficulty +
+                _difficulty;
+        }
+        require(_totalDifficulty > 0, "total diffculty");
+
+        // update to unconfirmed
+        tmp = ethHeader({
+            height: _height,
+            headerHash: _hash,
+            parentHash: _parentHash,
+            totalDifficulty: _totalDifficulty,
+            receiptRoot: _receiptRoot
+        });
+        unconfirmed[_height][_hash] = tmp;
+        unconfirmedIdx[_height].push(_hash);
+
+        // check difficulty consensus
+        if (_totalDifficulty <= maxDifficulty) {
+            return;
+        }
+        maxDifficulty = _totalDifficulty;
+
+        // check confirmed threshold
+        uint256 currentHeight = latest.height;
+        if (_height - currentHeight < confirmedThreshold) {
+            return;
+        }
+
+        // find next latest header
+        uint256 latestHeight;
+        bytes32 latestHash;
+        (latestHeight, latestHash) = findNextLatestHeader(
+            currentHeight,
+            _height,
+            _hash,
+            _parentHash
+        );
+        require(latestHeight > 0, "find next latest block fail");
+
+        updateLatestBlock(latestHeight, latestHash);
+    }
+
+    function updateLatestBlock(uint256 latestHeight, bytes32 latestHash)
+        internal
+    {
+        latest = unconfirmed[latestHeight][latestHash];
+        history[latestHeight] = latest;
+
+        uint256 len = unconfirmedIdx[latestHeight].length;
+        for (uint256 i = 0; i < len; i++) {
+            delete unconfirmed[latestHeight][unconfirmedIdx[latestHeight][i]];
+        }
+        delete unconfirmedIdx[latestHeight];
+    }
+
+    // 0: not found
+    // 1: in history
+    // 2: in unconfirmed
+    function findHeader(uint256 _height, bytes32 _hash)
+        public
+        view
+        returns (int256)
+    {
+        uint256 latestHeight = latest.height;
+        if (_height <= latestHeight) {
+            if (history[_height].headerHash == _hash) {
+                return 1;
+            } else {
+                return 0;
+            }
+        }
+        ethHeader storage header = unconfirmed[_height][_hash];
+        if (header.height == 0) {
+            return 0;
+        }
+        return 2;
+    }
+
+    function findNextLatestHeader(
+        uint256 currentHeight,
+        uint256 trustHeight,
+        bytes32 trustHash,
+        bytes32 trustParentHash
+    ) internal view returns (uint256, bytes32) {
+        for (;;) {
+            uint256 height = trustHeight - 1;
+            if (height == currentHeight) {
+                return (trustHeight, trustHash);
+            } else if (height < currentHeight) {
+                return (0, trustHash);
+            }
+            ethHeader storage trust = unconfirmed[height][trustParentHash];
+
+            if (trust.height == 0) {
+                return (0, trustHash);
+            }
+            trustHeight = trust.height;
+            trustHash = trust.headerHash;
+            trustParentHash = trust.parentHash;
+        }
+    }
+
+    function verifyHeader(bytes32 _hash, bytes memory _headers)
+        internal
+        pure
+    {
+        bytes32 _headerHash = keccak256(_headers);
+        require(_headerHash == _hash, "hash verified");
+    }
+
+    // -----------------------------------------------------------
+    // -----------------------------------------------------------
+    // -----------------------------------------------------------
+    // -----------------------------------------------------------
+    // -----------------------------------------------------------
+    // -----------------------------------------------------------
+    // -----------------------------------------------------------
+
+    mapping(bytes32 => mapping(bytes32 => bool)) deposited;
+
+
+    onMessage _deposit(bytes calldata argsRaw) {
+        RLPItem[] memory args =toList(toRLPItem(argsRaw));
+
+        deposit(
+            toUint(args[0]),
+            toBytes32(args[1]),
+            toBytes(args[2]),
+            toBytes(args[3]),
+            toBytes(args[4]),
+            toBytes(args[5]),
+            toBytes(args[6]),
+            toBytes(args[7]),
+            toUint(args[8])
+        );
+    }
+
+    function deposit(
+        uint256 blockHeight,
+        bytes32 root,
+        bytes memory encodedPath,
+        bytes memory rlpParentNodes,
+        bytes memory status,
+        bytes memory cumulativeGas,
+        bytes memory logsBloom,
+        bytes memory logsRaw,
+        uint256 logIdx
+    ) public {
+        requireBasic(blockHeight, root, encodedPath);
+
+        verifyReceipt(
+            root,
+            encodedPath,
+            rlpParentNodes,
+            status,
+            cumulativeGas,
+            logsBloom,
+            logsRaw
+        );
+
+        processLog(logsRaw, logIdx);
+    }
+
+    function requireBasic(
+        uint256 blockHeight,
+        bytes32 root,
+        bytes memory encodedPath
+    ) internal {
+        require(blockHeight <= latest.height, "block height required");
+        require(
+            history[blockHeight].receiptRoot == root,
+            "block receipt root required"
+        );
+
+        bytes32 path = keccak256(encodedPath);
+        require(!deposited[root][path], "duplicated deposit");
+        deposited[root][path] = true;
+    }
+
+    function verifyReceipt(
+        bytes32 root,
+        bytes memory encodedPath,
+        bytes memory rlpParentNodes,
+        bytes memory status,
+        bytes memory cumulativeGas,
+        bytes memory logsBloom,
+        bytes memory logsRaw
+    ) public pure {
+        bytes memory value = buildReceipt(
+            status,
+            cumulativeGas,
+            logsBloom,
+            logsRaw
+        );
+
+        require(
+            merkleverify(
+                value,
+                encodedPath,
+                rlpParentNodes,
+                root
+            ),
+            "receipt proof"
+        );
+    }
+
+    function buildReceipt(
+        bytes memory status,
+        bytes memory cumulativeGas,
+        bytes memory logsBloom,
+        bytes memory logsRaw
+    ) public pure returns (bytes memory) {
+        bytes[] memory receipt = new bytes[](4);
+        receipt[0] = status;
+        receipt[1] = cumulativeGas;
+        receipt[2] = logsBloom;
+        receipt[3] = logsRaw;
+
+        bool[] memory receiptFlags = new bool[](4);
+        receiptFlags[0] = true;
+        receiptFlags[1] = true;
+        receiptFlags[2] = true;
+
+        return encodeListBloom(receipt, receiptFlags);
+    }
+
+    event Deposit(uint256, uint256, uint256, uint256);
+
+    function processLog(bytes memory logsRaw, uint256 logIdx) public {
+        RLPItem[] memory logs = toList(toRLPItem(logsRaw));
+
+        RLPItem memory log = logs[logIdx];
+        uint256 token;
+        uint256 from;
+        uint256 to;
+        uint256 amount;
+        (token, from, to, amount) = parseLog(log);
+        emit Deposit(token, from, to, amount);
+    }
+
+    // Token,From,To,Amount
+    function parseLog(RLPItem memory log)
+        public
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        RLPItem[] memory args =toList(log);
+
+        require(args.length == 3, "log args length");
+        require(
+            bytesEquals(
+                toBytes(args[0]),
+                bytes(hex"021576770cb3729716ccfb687afdb4c6bf720cb6")
+            ),
+            "log address required"
+        );
+        RLPItem[] memory topics = toList(args[1]);
+        require(topics.length == 3, "log topics length");
+        require(
+            bytesEquals(
+                toBytes(topics[0]),
+                bytes(
+                    hex"ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+                )
+            ),
+            "log name required"
+        );
+        return (
+            0,
+            toUint(topics[1]),
+            toUint(topics[2]),
+            toUint(args[2])
+        );
+    }
+    function bytesEquals(bytes memory b1, bytes memory b2)
+        public
+        pure
+        returns (bool)
+    {
+        if (b1.length != b2.length) {
+            return false;
+        }
+        for (uint256 i = 0; i < b1.length; i++) {
+            if (b1[i] != b2[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+    function encodeList(bytes[] memory arr)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        uint256 len = arr.length;
+        bytes memory raw;
+        for (uint256 i = 0; i < len; i++) {
+            raw = abi.encodePacked(raw, encodeBytes(arr[i]));
+        }
+        return abi.encodePacked(encodeLength(raw.length, 192), raw);
+    }
+
+    function encodeListBloom(bytes[] memory arr, bool[] memory flags)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        require(arr.length == flags.length, "encode list length required");
+        uint256 len = arr.length;
+        bytes memory raw;
+        for (uint256 i = 0; i < len; i++) {
+            if (flags[i]) {
+                raw = abi.encodePacked(raw, encodeBytes(arr[i]));
+            } else {
+                raw = abi.encodePacked(raw, arr[i]);
+            }
+        }
+        return abi.encodePacked(encodeLength(raw.length, 192), raw);
+    }
+
+    function encodeBytes(bytes memory self)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory encoded;
+        if (self.length == 1 && uint8(self[0]) <= 128) {
+            encoded = self;
+        } else {
+            encoded = abi.encodePacked(encodeLength(self.length, 128), self);
+        }
+        return encoded;
+    }
+
+    function encodeLength(uint256 len, uint256 offset)
+        public
+        pure
+        returns (bytes memory)
+    {
+        bytes memory encoded;
+        if (len < 56) {
+            encoded = new bytes(1);
+            encoded[0] = bytes32(len + offset)[31];
+        } else {
+            uint256 lenLen;
+            uint256 i = 1;
+            while (len / i != 0) {
+                lenLen++;
+                i *= 256;
+            }
+
+            encoded = new bytes(lenLen + 1);
+            encoded[0] = bytes32(lenLen + offset + 55)[31];
+            for (i = 1; i <= lenLen; i++) {
+                encoded[i] = bytes32((len / (256**(lenLen - i))) % 256)[31];
+            }
+        }
+        return encoded;
+    }
+
+    uint8 constant STRING_SHORT_START = 0x80;
+    uint8 constant STRING_LONG_START = 0xb8;
+    uint8 constant LIST_SHORT_START = 0xc0;
+    uint8 constant LIST_LONG_START = 0xf8;
+    uint8 constant WORD_SIZE = 32;
+
+    struct RLPItem {
+        uint256 len;
+        uint256 memPtr;
+    }
+
+    struct Iterator {
+        RLPItem item; // Item that's being iterated over.
+        uint256 nextPtr; // Position of the next item in the list.
+    }
+
+    /*
+     * @dev Returns the next element in the iteration. Reverts if it has not next element.
+     * @param self The iterator.
+     * @return The next element in the iteration.
+     */
+    function next(Iterator memory self) internal pure returns (RLPItem memory) {
+        require(hasNext(self));
+
+        uint256 ptr = self.nextPtr;
+        uint256 itemLength = _itemLength(ptr);
+        self.nextPtr = ptr + itemLength;
+
+        return RLPItem(itemLength, ptr);
+    }
+
+    /*
+     * @dev Returns true if the iteration has more elements.
+     * @param self The iterator.
+     * @return true if the iteration has more elements.
+     */
+    function hasNext(Iterator memory self) internal pure returns (bool) {
+        RLPItem memory item = self.item;
+        return self.nextPtr < item.memPtr + item.len;
+    }
+
+    /*
+     * @param item RLP encoded bytes
+     */
+    function toRLPItem(bytes memory item)
+        internal
+        pure
+        returns (RLPItem memory)
+    {
+        uint256 memPtr;
+        assembly {
+            memPtr := add(item, 0x20)
+        }
+
+        return RLPItem(item.length, memPtr);
+    }
+
+    /*
+     * @dev Create an iterator. Reverts if item is not a list.
+     * @param self The RLP item.
+     * @return An 'Iterator' over the item.
+     */
+    function iterator(RLPItem memory self)
+        internal
+        pure
+        returns (Iterator memory)
+    {
+        require(isList(self));
+
+        uint256 ptr = self.memPtr + _payloadOffset(self.memPtr);
+        return Iterator(self, ptr);
+    }
+
+    /*
+     * @param item RLP encoded bytes
+     */
+    function rlpLen(RLPItem memory item) internal pure returns (uint256) {
+        return item.len;
+    }
+
+    /*
+     * @param item RLP encoded bytes
+     */
+    function payloadLen(RLPItem memory item) internal pure returns (uint256) {
+        return item.len - _payloadOffset(item.memPtr);
+    }
+
+    /*
+     * @param item RLP encoded list in bytes
+     */
+    function toList(RLPItem memory item)
+        internal
+        pure
+        returns (RLPItem[] memory)
+    {
+        require(isList(item), "list require");
+
+        uint256 items = numItems(item);
+        RLPItem[] memory result = new RLPItem[](items);
+
+        uint256 memPtr = item.memPtr + _payloadOffset(item.memPtr);
+        uint256 dataLen;
+        for (uint256 i = 0; i < items; i++) {
+            dataLen = _itemLength(memPtr);
+            result[i] = RLPItem(dataLen, memPtr);
+            memPtr = memPtr + dataLen;
+        }
+
+        return result;
+    }
+
+    // @return indicator whether encoded payload is a list. negate this function call for isData.
+    function isList(RLPItem memory item) internal pure returns (bool) {
+        if (item.len == 0) return false;
+
+        uint8 byte0;
+        uint256 memPtr = item.memPtr;
+        assembly {
+            byte0 := byte(0, mload(memPtr))
+        }
+
+        if (byte0 < LIST_SHORT_START) return false;
+        return true;
+    }
+
+    /** RLPItem conversions into data types **/
+
+    // any non-zero byte except "0x80" is considered true
+    function toBoolean(RLPItem memory item) internal pure returns (bool) {
+        require(item.len == 1);
+        uint256 result;
+        uint256 memPtr = item.memPtr;
+        assembly {
+            result := byte(0, mload(memPtr))
+        }
+
+        // SEE Github Issue #5.
+        // Summary: Most commonly used RLP libraries (i.e Geth) will encode
+        // "0" as "0x80" instead of as "0". We handle this edge case explicitly
+        // here.
+        if (result == 0 || result == STRING_SHORT_START) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    function toBytes32(RLPItem memory self)
+        internal
+        pure
+        returns (bytes32 data)
+    {
+        return bytes32(toUint(self));
+    }
+
+    function toUint(RLPItem memory item) internal pure returns (uint256) {
+        require(item.len > 0 && item.len <= 33);
+
+        uint256 offset = _payloadOffset(item.memPtr);
+        uint256 len = item.len - offset;
+
+        uint256 result;
+        uint256 memPtr = item.memPtr + offset;
+        assembly {
+            result := mload(memPtr)
+
+            // shfit to the correct location if neccesary
+            if lt(len, 32) {
+                result := div(result, exp(256, sub(32, len)))
+            }
+        }
+
+        return result;
+    }
+
+    // enforces 32 byte length
+    function toUintStrict(RLPItem memory item) internal pure returns (uint256) {
+        // one byte prefix
+        require(item.len == 33);
+
+        uint256 result;
+        uint256 memPtr = item.memPtr + 1;
+        assembly {
+            result := mload(memPtr)
+        }
+
+        return result;
+    }
+
+    function toBytes(RLPItem memory item) internal pure returns (bytes memory) {
+        require(item.len > 0);
+
+        uint256 offset = _payloadOffset(item.memPtr);
+        uint256 len = item.len - offset; // data length
+        bytes memory result = new bytes(len);
+
+        uint256 destPtr;
+        assembly {
+            destPtr := add(0x20, result)
+        }
+
+        copy(item.memPtr + offset, destPtr, len);
+        return result;
+    }
+
+    // @returns raw rlp encoding in bytes
+    function toRlpBytes(RLPItem memory item)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory result = new bytes(item.len);
+        if (result.length == 0) return result;
+
+        uint256 ptr;
+        assembly {
+            ptr := add(0x20, result)
+        }
+
+        copy(item.memPtr, ptr, item.len);
+        return result;
+    }
+
+    /*
+     * Private Helpers
+     */
+
+    // @return number of payload items inside an encoded list.
+    function numItems(RLPItem memory item) private pure returns (uint256) {
+        if (item.len == 0) return 0;
+
+        uint256 count = 0;
+        uint256 currPtr = item.memPtr + _payloadOffset(item.memPtr);
+        uint256 endPtr = item.memPtr + item.len;
+        while (currPtr < endPtr) {
+            currPtr = currPtr + _itemLength(currPtr); // skip over an item
+            count++;
+        }
+
+        return count;
+    }
+
+    // @return entire rlp item byte length
+    function _itemLength(uint256 memPtr) private pure returns (uint256) {
+        uint256 itemLen;
+        uint256 byte0;
+        assembly {
+            byte0 := byte(0, mload(memPtr))
+        }
+
+        if (byte0 < STRING_SHORT_START) itemLen = 1;
+        else if (byte0 < STRING_LONG_START)
+            itemLen = byte0 - STRING_SHORT_START + 1;
+        else if (byte0 < LIST_SHORT_START) {
+            assembly {
+                let byteLen := sub(byte0, 0xb7) // # of bytes the actual length is
+                memPtr := add(memPtr, 1) // skip over the first byte
+
+                /* 32 byte word size */
+                let dataLen := div(mload(memPtr), exp(256, sub(32, byteLen))) // right shifting to get the len
+                itemLen := add(dataLen, add(byteLen, 1))
+            }
+        } else if (byte0 < LIST_LONG_START) {
+            itemLen = byte0 - LIST_SHORT_START + 1;
+        } else {
+            assembly {
+                let byteLen := sub(byte0, 0xf7)
+                memPtr := add(memPtr, 1)
+
+                let dataLen := div(mload(memPtr), exp(256, sub(32, byteLen))) // right shifting to the correct length
+                itemLen := add(dataLen, add(byteLen, 1))
+            }
+        }
+
+        return itemLen;
+    }
+
+    // @return number of bytes until the data
+    function _payloadOffset(uint256 memPtr) private pure returns (uint256) {
+        uint256 byte0;
+        assembly {
+            byte0 := byte(0, mload(memPtr))
+        }
+
+        if (byte0 < STRING_SHORT_START) return 0;
+        else if (
+            byte0 < STRING_LONG_START ||
+            (byte0 >= LIST_SHORT_START && byte0 < LIST_LONG_START)
+        ) return 1;
+        else if (byte0 < LIST_SHORT_START)
+            // being explicit
+            return byte0 - (STRING_LONG_START - 1) + 1;
+        else return byte0 - (LIST_LONG_START - 1) + 1;
+    }
+
+    /*
+     * @param src Pointer to source
+     * @param dest Pointer to destination
+     * @param len Amount of memory to copy from the source
+     */
+    function copy(
+        uint256 src,
+        uint256 dest,
+        uint256 len
+    ) private pure {
+        if (len == 0) return;
+
+        // copy as many word sizes as possible
+        for (; len >= WORD_SIZE; len -= WORD_SIZE) {
+            assembly {
+                mstore(dest, mload(src))
+            }
+
+            src += WORD_SIZE;
+            dest += WORD_SIZE;
+        }
+
+        // left over bytes. Mask is used to remove unwanted bytes from the word
+        uint256 mask = 256**(WORD_SIZE - len) - 1;
+        assembly {
+            let srcpart := and(mload(src), not(mask)) // zero out src
+            let destpart := and(mload(dest), mask) // retrieve the bytes
+            mstore(dest, or(destpart, srcpart))
+        }
+    }
+    /*
+     * @dev Verifies a merkle patricia proof.
+     * @param value The terminating value in the trie.
+     * @param encodedPath The path in the trie leading to value.
+     * @param rlpParentNodes The rlp encoded stack of nodes.
+     * @param root The root hash of the trie.
+     * @return The boolean validity of the proof.
+     */
+    function merkleverify(
+        bytes memory value,
+        bytes memory encodedPath,
+        bytes memory rlpParentNodes,
+        bytes32 root
+    ) internal pure returns (bool) {
+        RLPItem memory item = toRLPItem(rlpParentNodes);
+        RLPItem[] memory parentNodes = toList(item);
+
+        bytes memory currentNode;
+        RLPItem[] memory currentNodeList;
+
+        bytes32 nodeKey = root;
+        uint256 pathPtr = 0;
+
+        bytes memory path = _getNibbleArray(encodedPath);
+        if (path.length == 0) {
+            require(1 < 0, "0009342");
+            return false;
+        }
+
+        for (uint256 i = 0; i < parentNodes.length; i++) {
+            if (pathPtr > path.length) {
+                require(1 < 0, "00091");
+                return false;
+            }
+
+            currentNode = toBytes(parentNodes[i]);
+            if (nodeKey != keccak256(currentNode)) {
+                require(1 < 0, "0009");
+                return false;
+            }
+            currentNodeList = toList(toRLPItem(currentNode));
+            // currentNodeList = RLP.toList(parentNodes[i]);
+
+            // require(1<0, "dddddd22232");
+            if (currentNodeList.length == 17) {
+                require(uint8(path[0]) == 8, "path[0] ==8");
+                if (pathPtr == path.length) {
+                    if (
+                        keccak256(toBytes(currentNodeList[16])) ==
+                        keccak256(value)
+                    ) {
+                        return true;
+                    } else {
+                        require(1 < 0, "00");
+                        return false;
+                    }
+                }
+
+                uint8 nextPathNibble = uint8(path[pathPtr]);
+
+                if (nextPathNibble > 16) {
+                    require(1 < 0, "22");
+                    return false;
+                }
+                nodeKey =toBytes32(currentNodeList[nextPathNibble]);
+                pathPtr += 1;
+            } else if (currentNodeList.length == 2) {
+                pathPtr += _nibblesToTraverse(
+                    toBytes(currentNodeList[0]),
+                    path,
+                    pathPtr
+                );
+
+                if (pathPtr == path.length) {
+                    //leaf node
+                    if (
+                        keccak256(toBytes(currentNodeList[1])) ==
+                        keccak256(value)
+                    ) {
+                        return true;
+                    } else {
+                        require(1 < 0, "1");
+                        return false;
+                    }
+                }
+                //extension node
+                if (
+                    _nibblesToTraverse(
+                        toBytes(currentNodeList[0]),
+                        path,
+                        pathPtr
+                    ) == 0
+                ) {
+                    require(1 < 0, "2");
+                    return false;
+                }
+
+                nodeKey = toBytes32(currentNodeList[1]);
+            } else {
+                require(1 < 0, "3");
+                return false;
+            }
+        }
+    }
+
+    function _nibblesToTraverse(
+        bytes memory encodedPartialPath,
+        bytes memory path,
+        uint256 pathPtr
+    ) private pure returns (uint256) {
+        uint256 len;
+        // encodedPartialPath has elements that are each two hex characters (1 byte), but partialPath
+        // and slicedPath have elements that are each one hex character (1 nibble)
+        bytes memory partialPath = _getNibbleArray2(encodedPartialPath);
+        bytes memory slicedPath = new bytes(partialPath.length);
+
+        // pathPtr counts nibbles in path
+        // partialPath.length is a number of nibbles
+        for (uint256 i = pathPtr; i < pathPtr + partialPath.length; i++) {
+            bytes1 pathNibble = path[i];
+            slicedPath[i - pathPtr] = pathNibble;
+        }
+
+        if (keccak256(partialPath) == keccak256(slicedPath)) {
+            len = partialPath.length;
+        } else {
+            len = 0;
+        }
+        return len;
+    }
+
+    // bytes b must be hp encoded
+    function _getNibbleArray(bytes memory b)
+        private
+        pure
+        returns (bytes memory)
+    {
+        bytes memory nibbles;
+
+        if (b.length > 0) {
+            nibbles = new bytes(b.length * 2);
+            for (uint256 i = 0; i < nibbles.length; i++) {
+                nibbles[i] = _getNthNibbleOfBytes(i, b);
+            }
+        }
+        return nibbles;
+    }
+
+    function _getNthNibbleOfBytes(uint256 n, bytes memory str)
+        private
+        pure
+        returns (bytes1)
+    {
+        return
+            bytes1(
+                n % 2 == 0 ? uint8(str[n / 2]) / 0x10 : uint8(str[n / 2]) % 0x10
+            );
+    }
+
+    // bytes b must be hp encoded
+    function _getNibbleArray2(bytes memory b)
+        private
+        pure
+        returns (bytes memory)
+    {
+        bytes memory nibbles;
+        if (b.length > 0) {
+            uint8 offset;
+            uint8 hpNibble = uint8(_getNthNibbleOfBytes(0, b));
+            if (hpNibble == 1 || hpNibble == 3) {
+                nibbles = new bytes(b.length * 2 - 1);
+                bytes1 oddNibble = _getNthNibbleOfBytes(1, b);
+                nibbles[0] = oddNibble;
+                offset = 1;
+            } else {
+                nibbles = new bytes(b.length * 2 - 2);
+                offset = 0;
+            }
+
+            for (uint256 i = offset; i < nibbles.length; i++) {
+                nibbles[i] = _getNthNibbleOfBytes(i - offset + 2, b);
+            }
+        }
+        return nibbles;
+    }
+}
+
