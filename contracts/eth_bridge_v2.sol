@@ -390,6 +390,7 @@ contract EthBridgeV2 {
     // Token,From,To,Amount
     function parseLog(RLPItem memory log)
         public
+        pure
         returns (
             uint256,
             uint256,

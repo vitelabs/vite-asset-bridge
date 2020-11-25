@@ -386,8 +386,9 @@ contract EthBridge {
     }
 
     // Token,From,To,Amount
-    function parseLog(RLP.RLPItem memory log)
+    function parseLog(RLP.RLPItem memory _log)
         public
+        pure
         returns (
             uint256,
             uint256,
@@ -395,7 +396,7 @@ contract EthBridge {
             uint256
         )
     {
-        RLP.RLPItem[] memory args = RLP.toList(log);
+        RLP.RLPItem[] memory args = RLP.toList(_log);
 
         require(args.length == 3, "log args length");
         require(

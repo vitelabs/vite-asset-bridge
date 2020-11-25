@@ -47,7 +47,7 @@ contract Tools {
         bytes memory cumulativeGas,
         bytes memory logsBloom,
         bytes[] memory logs
-    ) public returns (bool) {
+    ) public pure returns (bool) {
         bytes memory value = buildReceipt(
             status,
             cumulativeGas,
@@ -72,7 +72,7 @@ contract Tools {
         bytes memory cumulativeGas,
         bytes memory logsBloom,
         bytes[] memory logs
-    ) public returns (bytes memory) {
+    ) public pure returns (bytes memory) {
         bool[] memory logsFlags = new bool[](logs.length);
         bytes memory rlpLogs = RLPEncoder.encodeListBloom(logs, logsFlags);
         bytes[] memory receipt = new bytes[](4);
@@ -114,8 +114,8 @@ contract Tools {
         return keccak256(RLPEncoder.encodeListBloom(receipt, receiptFlags));
     }
 
-    function log(bytes memory log) public {
-        RLP.RLPItem memory item = RLP.toRLPItem(log);
+    function log(bytes memory _log) public {
+        RLP.RLPItem memory item = RLP.toRLPItem(_log);
         RLP.RLPItem[] memory args = RLP.toList(item);
 
         require(args.length == 3, "log args length");

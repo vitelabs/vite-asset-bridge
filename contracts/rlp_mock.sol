@@ -5,7 +5,7 @@ import "./rlp.sol";
 
 contract RLP2{
     // every four hours
-    function verifyHeader(bytes32 _hash, bytes[] memory _headers) public {
+    function verifyHeader(bytes32 _hash, bytes[] memory _headers) public pure {
         require(keccak256(RLPEncoder.encodeList(_headers)) == _hash, "hash verified");
     }
 }
@@ -42,7 +42,7 @@ contract RLP1 {
         require(keccak256(encodeRaw(_header.raw)) == _hash, "hash verified");
     }
 
-    function packed0(Header memory _header) internal {
+    function packed0(Header memory _header) internal pure {
         _header.raw = abi.encodePacked(
             _header.raw,
             encodeBytes(_header.parentHash),
@@ -52,7 +52,7 @@ contract RLP1 {
         );
     }
 
-    function packed1(Header memory _header) internal {
+    function packed1(Header memory _header) internal pure {
         _header.raw = abi.encodePacked(
             _header.raw,
             encodeBytes(_header.transactionsRoot),
@@ -62,7 +62,7 @@ contract RLP1 {
         );
     }
 
-    function packed2(Header memory _header) internal {
+    function packed2(Header memory _header) internal pure {
         _header.raw = abi.encodePacked(
             _header.raw,
             encodeBytes(_header.number),
@@ -75,11 +75,11 @@ contract RLP1 {
         );
     }
 
-    function encodeRaw(bytes memory raw) internal pure returns (bytes memory) {
-        return abi.encodePacked(RLPEncoder.encodeLength(raw.length, 192), raw);
+    function encodeRaw(bytes memory _raw) internal pure returns (bytes memory) {
+        return abi.encodePacked(RLPEncoder.encodeLength(_raw.length, 192), _raw);
     }
     
-    function encodeBytes(bytes memory raw) internal pure returns (bytes memory) {
-        return RLPEncoder.encodeBytes(raw);
+    function encodeBytes(bytes memory _raw) internal pure returns (bytes memory) {
+        return RLPEncoder.encodeBytes(_raw);
     }
 }
