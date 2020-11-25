@@ -1,7 +1,7 @@
-const EthBridge = artifacts.require("EthBridge");
+const EthBridge = artifacts.require("EthBridgeV2");
 const keccak256 = require('keccak256')
-const RLP = artifacts.require("RLP");
-const BytesLib = artifacts.require("BytesLib");
+// const RLP = artifacts.require("RLP");
+// const BytesLib = artifacts.require("BytesLib");
 const { bufferToHex, bufferToInt, toBuffer } = require('ethereumjs-util')
 const { Account, Header, Log, Proof, Receipt, Transaction } = require('eth-object');
 const { assert } = require('chai');
@@ -45,10 +45,10 @@ const blockHexList = [
 
 contract('Eth bridge', ([owner, alice]) => {
     beforeEach(async () => {
-        const rlp = await RLP.new();
-        const bytesLib = await BytesLib.new();
-        await EthBridge.link('RLP', rlp.address);
-        await EthBridge.link('BytesLib', bytesLib.address);
+        // const rlp = await RLP.new();
+        // const bytesLib = await BytesLib.new();
+        // await EthBridge.link('RLP', rlp.address);
+        // await EthBridge.link('BytesLib', bytesLib.address);
     });
 
     it('submit header', async function () {
