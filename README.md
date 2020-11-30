@@ -1,4 +1,5 @@
-
+# About
+VITE <> Ethereum Decentralized Trustless Bridge.
 
 # Env
 
