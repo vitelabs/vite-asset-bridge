@@ -13,7 +13,6 @@ contract EthBridgeV2 {
     mapping(uint256 => bytes32[]) public unconfirmedIdx;
 
     // any header less than this difficulty will not be submitted successfully
-    uint256 public leastDifficulty;
     uint256 public maxDifficulty;
 
     // confirmed num
@@ -25,64 +24,21 @@ contract EthBridgeV2 {
         bytes32 parentHash;
         uint256 totalDifficulty;
         bytes32 receiptRoot;
+        uint256 difficulty;
+        bytes32 unclesHash;
+        uint256 timestamp;
     }
 
     constructor() public {}
 
     // todo  init -> constructor
     function init(
-        uint256 _leastDifficulty,
         uint256 _totalDifficulty,
         uint256 _confirmedThreshold,
         bytes32 _hash,
         bytes memory _headersRaw
     ) public {
-        verifyHeader(_hash, _headersRaw);
-
-        RLPItem[] memory _headers = rlpToList(toRLPItem(_headersRaw));
-
-        uint256 _height =rlpToUint(_headers[8]);
-        bytes32 _parentHash = rlpToBytes32(_headers[0]);
-        uint256 _difficulty = rlpToUint(_headers[7]);
-        bytes32 _receiptRoot = rlpToBytes32(_headers[5]);
-        _init(
-            _leastDifficulty,
-            _totalDifficulty,
-            _confirmedThreshold,
-            _hash,
-            _height,
-            _parentHash,
-            _difficulty,
-            _receiptRoot
-        );
-    }
-
-    // todo public -> internal
-    function _init(
-        uint256 _leastDifficulty,
-        uint256 _totalDifficulty,
-        uint256 _confirmedThreshold,
-        bytes32 _hash,
-        uint256 _height,
-        bytes32 _parentHash,
-        uint256 _difficulty,
-        bytes32 _receiptRoot
-    ) public {
-        leastDifficulty = _leastDifficulty;
-        confirmedThreshold = _confirmedThreshold;
-        latest = ethHeader({
-            height: _height,
-            headerHash: _hash,
-            parentHash: _parentHash,
-            totalDifficulty: _totalDifficulty + _difficulty,
-            receiptRoot: _receiptRoot
-        });
-        history[latest.height] = latest;
-        maxDifficulty = latest.totalDifficulty;
-    }
-
-    function submitHeader(bytes32 _hash, bytes memory _headersRaw) public {
-        verifyHeader(_hash, _headersRaw);
+        verifyHeaderHash(_hash, _headersRaw);
 
         RLPItem[] memory _headers = rlpToList(toRLPItem(_headersRaw));
 
@@ -90,37 +46,89 @@ contract EthBridgeV2 {
         bytes32 _parentHash = rlpToBytes32(_headers[0]);
         uint256 _difficulty = rlpToUint(_headers[7]);
         bytes32 _receiptRoot = rlpToBytes32(_headers[5]);
+        ethHeader memory tmp = ethHeader({
+            height: _height,
+            headerHash: _hash,
+            parentHash: _parentHash,
+            totalDifficulty: 0,
+            receiptRoot: _receiptRoot,
+            difficulty: rlpToUint(_headers[7]),
+            unclesHash: rlpToBytes32(_headers[1]),
+            timestamp: rlpToUint(_headers[11])
+        });
 
-        _submitHeader(_hash, _height, _parentHash, _difficulty, _receiptRoot);
+        _init(
+            _totalDifficulty,
+            _confirmedThreshold,
+            _hash,
+            tmp
+        );
+    }
+
+    // todo public -> internal
+    function _init(
+        uint256 _totalDifficulty,
+        uint256 _confirmedThreshold,
+        bytes32 _hash,
+        ethHeader memory tmp
+    ) public {
+        confirmedThreshold = _confirmedThreshold;
+        latest = ethHeader({
+            height: tmp.height,
+            headerHash: tmp.headerHash,
+            parentHash: tmp.parentHash,
+            totalDifficulty: _totalDifficulty + tmp.difficulty,
+            receiptRoot: tmp.receiptRoot,
+            difficulty: tmp.difficulty,
+            unclesHash: tmp.unclesHash,
+            timestamp: tmp.timestamp
+        });
+        history[latest.height] = latest;
+        maxDifficulty = latest.totalDifficulty;
+    }
+
+    function submitHeader(bytes32 _hash, bytes memory _headersRaw) public {
+        verifyHeaderHash(_hash, _headersRaw);
+
+        RLPItem[] memory _headers = rlpToList(toRLPItem(_headersRaw));
+
+        ethHeader memory tmp = ethHeader({
+            height:rlpToUint(_headers[8]),
+            headerHash: _hash,
+            parentHash: rlpToBytes32(_headers[0]),
+            totalDifficulty: 0,
+            receiptRoot: rlpToBytes32(_headers[5]),
+            difficulty: rlpToUint(_headers[7]),
+            unclesHash: rlpToBytes32(_headers[1]),
+            timestamp: rlpToUint(_headers[11])
+        });
+        
+
+        _submitHeader(tmp);
     }
 
     // todo public -> internal
     function _submitHeader(
-        bytes32 _hash,
-        uint256 _height,
-        bytes32 _parentHash,
-        uint256 _difficulty,
-        bytes32 _receiptRoot
+        ethHeader memory tmp 
     ) public {
-        require(_difficulty > leastDifficulty, "least difficulty check");
-        require(_height > latest.height, "height require");
+        require(tmp.height > latest.height, "height require");
 
-        int256 found = findHeader(_height, _hash);
+        int256 found = findHeader(tmp.height, tmp.headerHash);
         require(found == 0, "duplicated header");
 
-        found = findHeader(_height - 1, _parentHash);
+        found = findHeader(tmp.height - 1, tmp.parentHash);
         require(found > 0, "parent header not found");
 
         uint256 _totalDifficulty = 0;
         if (found == 1) {
-            _totalDifficulty = latest.totalDifficulty + _difficulty;
+            _totalDifficulty = latest.totalDifficulty + tmp.difficulty;
         } else if (found == 2) {
             _totalDifficulty =
-                unconfirmed[_height - 1][_parentHash].totalDifficulty +
-                _difficulty;
+                unconfirmed[tmp.height- 1][tmp.parentHash].totalDifficulty +
+                tmp.difficulty;
         }
         require(_totalDifficulty > 0, "total diffculty");
-
+        verifyHeader(tmp, getHeader(tmp.height-1, tmp.parentHash, found));
         // update to unconfirmed
         // tmp = ethHeader({
         //     height: _height,
@@ -129,14 +137,17 @@ contract EthBridgeV2 {
         //     totalDifficulty: _totalDifficulty,
         //     receiptRoot: _receiptRoot
         // });
-        unconfirmed[_height][_hash] = ethHeader({
-            height: _height,
-            headerHash: _hash,
-            parentHash: _parentHash,
+        unconfirmed[tmp.height][tmp.headerHash] = ethHeader({
+            height: tmp.height,
+            headerHash: tmp.headerHash,
+            parentHash: tmp.parentHash,
             totalDifficulty: _totalDifficulty,
-            receiptRoot: _receiptRoot
+            receiptRoot: tmp.receiptRoot,
+            difficulty: tmp.difficulty,
+            unclesHash: tmp.unclesHash,
+            timestamp: tmp.timestamp
         });
-        unconfirmedIdx[_height].push(_hash);
+        unconfirmedIdx[tmp.height].push(tmp.headerHash);
 
         // check difficulty consensus
         if (_totalDifficulty <= maxDifficulty) {
@@ -146,7 +157,7 @@ contract EthBridgeV2 {
 
         // check confirmed threshold
         uint256 currentHeight = latest.height;
-        if (_height - currentHeight < confirmedThreshold) {
+        if (tmp.height - currentHeight < confirmedThreshold) {
             return;
         }
 
@@ -155,9 +166,9 @@ contract EthBridgeV2 {
         bytes32 latestHash;
         (latestHeight, latestHash) = findNextLatestHeader(
             currentHeight,
-            _height,
-            _hash,
-            _parentHash
+            tmp.height,
+            tmp.headerHash,
+            tmp.parentHash
         );
         require(latestHeight > 0, "find next latest block fail");
 
@@ -180,24 +191,32 @@ contract EthBridgeV2 {
     // 0: not found
     // 1: in history
     // 2: in unconfirmed
-    function findHeader(uint256 height, bytes32 hash)
+    function findHeader(uint256 _height, bytes32 _hash)
         public
         view
         returns (int256)
     {
         uint256 latestHeight = latest.height;
-        if (height <= latestHeight) {
-            if (history[height].headerHash == hash) {
+        if (_height <= latestHeight) {
+            if (history[_height].headerHash == _hash) {
                 return 1;
             } else {
                 return 0;
             }
         }
-        ethHeader storage header = unconfirmed[height][hash];
+        ethHeader storage header = unconfirmed[_height][_hash];
         if (header.height == 0) {
             return 0;
         }
         return 2;
+    }
+
+    function getHeader(uint _height, bytes32 _hash, int256 found) public view returns(ethHeader memory){                        
+        if(found==1){
+            return latest;
+        }else if (found ==2){
+            return unconfirmed[_height][_hash];
+        }
     }
 
     function findNextLatestHeader(
@@ -224,11 +243,98 @@ contract EthBridgeV2 {
         }
     }
 
-    function verifyHeader(bytes32 _hash, bytes memory _headers) internal pure {
+    function verifyHeaderHash(bytes32 _hash, bytes memory _headers) internal pure {
         bytes32 _headerHash = keccak256(_headers);
         require(_headerHash == _hash, "hash verified");
     }
 
+    // see YP section 4.3.4 "Block Header Validity"
+    function verifyHeader(ethHeader memory _header, ethHeader memory _parent) internal view{
+        // require(_header.extra.length<32, "extra-data too long");
+        require(_header.timestamp>=_parent.timestamp, "timestamp older than parent");
+        // todo
+        // require(_header.GasUsed <= _header.GasLimit, "invalid gasUsed && gasLimit");
+        // require(mul(absSub(_header.GasLimit, _parent.GasLimit), 1024) < _parent.GasLimit, "invalid gas limit 1");
+        // require(header.GasLimit>=500, "invalid gas limit 2");
+        require(_header.difficulty == calDifficulty(_header.timestamp, _parent), "invalid difficulty");
+    }
+    // see https://github.com/ethereum/EIPs/issues/100, https://eips.ethereum.org/EIPS/eip-1234, https://eips.ethereum.org/EIPS/eip-2384
+    function calDifficulty(uint timestamp, ethHeader memory _parent) internal view returns(uint){
+        // todo
+        uint diff = _parent.difficulty;
+        uint unclesNum = 1;
+        if(_parent.unclesHash != hex"1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"){
+            unclesNum = 2;
+        }
+        uint x1 = div(timestamp - _parent.timestamp, 9);
+        uint x2 = 0;
+        if(unclesNum>=x1) {
+            x2 = add(diff, mul(div(diff, 2048), unclesNum - x1));
+        }else if(x1-unclesNum<99){
+            x2 = sub(diff, mul(div(diff, 2048), x1 - unclesNum));
+        }else{
+            x2 = sub(diff, mul(div(diff, 2048), 99));
+        }
+        uint fakeBlockNumber = 0;
+        uint bombDelayFromParent = 8999999;
+        if (_parent.height>=bombDelayFromParent) {
+            fakeBlockNumber = _parent.height - bombDelayFromParent;
+        }
+        uint expDiffPeriod = 100000;
+        uint periodCount = div(fakeBlockNumber, expDiffPeriod);
+
+        uint x3 = x2;
+        if(periodCount>=2){                
+            x3 = x3 + 2**(periodCount-2);
+        }
+        return x3;
+    }
+
+
+    function _headerParentHash(RLPItem[] memory _header) internal pure returns(bytes32){
+
+    }
+
+
+    function add(uint256 a, uint256 b) internal pure returns (uint256) {
+        uint256 c = a + b;
+        require(c >= a, "SafeMath: addition overflow");
+
+        return c;
+    }
+    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+        require(b <= a, "SafeMath: subtraction overflow");
+        uint256 c = a - b;
+
+        return c;
+    }
+    function absSub(uint256 a, uint256 b) internal pure returns (uint256) {
+        if(a>=b){
+            return a-b;
+        }else{
+            return b-a;
+        }
+    }
+    function div(uint256 a, uint256 b) internal pure returns (uint256) {
+        require(b > 0, "SafeMath: division by zero");
+        uint256 c = a / b;
+        // assert(a == b * c + a % b); // There is no case in which this doesn't hold
+
+        return c;
+    }
+    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+        // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
+        // benefit is lost if 'b' is also tested.
+        // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522
+        if (a == 0) {
+            return 0;
+        }
+
+        uint256 c = a * b;
+        require(c / a == b, "SafeMath: multiplication overflow");
+
+        return c;
+    }
     function bytesToUint256(bytes memory bs) internal pure returns (uint256) {
         uint256 len = bs.length;
         uint256 result;

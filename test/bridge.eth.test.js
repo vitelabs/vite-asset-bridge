@@ -11,21 +11,21 @@ const { encode, decode } = require('rlp');
 function blockHeader(blockHex) {
     const blockHeader = Header.fromHex(blockHex);
     const headers = [
-        blockHeader.parentHash,
-        blockHeader.sha3Uncles,
-        blockHeader.miner,
-        blockHeader.stateRoot,
-        blockHeader.transactionsRoot,
-        blockHeader.receiptRoot,
-        blockHeader.logsBloom,
-        blockHeader.difficulty,
-        blockHeader.number,
-        blockHeader.gasLimit,
-        blockHeader.gasUsed,
-        blockHeader.timestamp,
-        blockHeader.extraData,
-        blockHeader.mixHash,
-        blockHeader.nonce,
+        blockHeader.parentHash, //0
+        blockHeader.sha3Uncles, //1
+        blockHeader.miner,  //2
+        blockHeader.stateRoot, //3
+        blockHeader.transactionsRoot, //4
+        blockHeader.receiptRoot, //5
+        blockHeader.logsBloom, //6
+        blockHeader.difficulty, //7
+        blockHeader.number,//8
+        blockHeader.gasLimit,//9
+        blockHeader.gasUsed,//10
+        blockHeader.timestamp,//11
+        blockHeader.extraData,//12
+        blockHeader.mixHash,//13
+        blockHeader.nonce,//14
     ];
     return { hash: bufferToHex(keccak256(blockHeader.serialize())), headers: encode(headers), header: blockHeader }
 }
@@ -74,10 +74,8 @@ contract('Eth bridge', ([owner, alice]) => {
 
             this.bridge = await EthBridge.new();
             console.log("init args", bufferToHex(hash), bufferToHex(headers));
-            await this.bridge.init(0, 0, 0, hash, headers);
+            await this.bridge.init(0, 0, hash, headers);
 
-            const leastDifficulty = await this.bridge.leastDifficulty();
-            assert.equal(leastDifficulty, 0);
             const { 0: height, 1: headerHash, 2: parentHash } = await this.bridge.latest();
             assert.equal(headerHash, hash);
             console.log(height.toString(), headerHash, parentHash);
