@@ -258,6 +258,9 @@ contract EthBridgeV2 {
         // require(header.GasLimit>=500, "invalid gas limit 2");
         require(_header.difficulty == calDifficulty(_header.timestamp, _parent), "invalid difficulty");
     }
+    // diff = (parent_diff +
+	//         (parent_diff / 2048 * max((2 if len(parent.uncles) else 1) - ((timestamp - parent.timestamp) // 9), -99))
+	//        ) + 2^(periodCount - 2)
     // see https://github.com/ethereum/EIPs/issues/100, https://eips.ethereum.org/EIPS/eip-1234, https://eips.ethereum.org/EIPS/eip-2384
     function calDifficulty(uint timestamp, ethHeader memory _parent) internal view returns(uint){
         // todo
