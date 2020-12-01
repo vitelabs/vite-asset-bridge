@@ -278,11 +278,7 @@ contract EthBridgeV2 {
         }else{
             x2 = sub(diff, mul(div(diff, 2048), 99));
         }
-        uint fakeBlockNumber = 0;
-        uint bombDelayFromParent = 8999999;
-        if (_parent.height>=bombDelayFromParent) {
-            fakeBlockNumber = _parent.height - bombDelayFromParent;
-        }
+        uint fakeBlockNumber = _parent.height - 8999999;
         uint expDiffPeriod = 100000;
         uint periodCount = div(fakeBlockNumber, expDiffPeriod);
 
@@ -292,12 +288,6 @@ contract EthBridgeV2 {
         }
         return x3;
     }
-
-
-    function _headerParentHash(RLPItem[] memory _header) internal pure returns(bytes32){
-
-    }
-
 
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
         uint256 c = a + b;
