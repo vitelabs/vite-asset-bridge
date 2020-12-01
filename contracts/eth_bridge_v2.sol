@@ -1,7 +1,6 @@
 pragma solidity ^0.6.3;
 pragma experimental ABIEncoderV2;
 
-
 contract EthBridgeV2 {
     // the latest confirmed header
     ethHeader public latest;
@@ -57,12 +56,7 @@ contract EthBridgeV2 {
             timestamp: rlpToUint(_headers[11])
         });
 
-        _init(
-            _totalDifficulty,
-            _confirmedThreshold,
-            _hash,
-            tmp
-        );
+        _init(_totalDifficulty, _confirmedThreshold, _hash, tmp);
     }
 
     // todo public -> internal
@@ -93,7 +87,7 @@ contract EthBridgeV2 {
         RLPItem[] memory _headers = rlpToList(toRLPItem(_headersRaw));
 
         ethHeader memory tmp = ethHeader({
-            height:rlpToUint(_headers[8]),
+            height: rlpToUint(_headers[8]),
             headerHash: _hash,
             parentHash: rlpToBytes32(_headers[0]),
             totalDifficulty: 0,
@@ -102,15 +96,12 @@ contract EthBridgeV2 {
             unclesHash: rlpToBytes32(_headers[1]),
             timestamp: rlpToUint(_headers[11])
         });
-        
 
         _submitHeader(tmp);
     }
 
     // todo public -> internal
-    function _submitHeader(
-        ethHeader memory tmp 
-    ) public {
+    function _submitHeader(ethHeader memory tmp) public {
         require(tmp.height > latest.height, "height require");
 
         int256 found = findHeader(tmp.height, tmp.headerHash);
@@ -124,11 +115,11 @@ contract EthBridgeV2 {
             _totalDifficulty = latest.totalDifficulty + tmp.difficulty;
         } else if (found == 2) {
             _totalDifficulty =
-                unconfirmed[tmp.height- 1][tmp.parentHash].totalDifficulty +
+                unconfirmed[tmp.height - 1][tmp.parentHash].totalDifficulty +
                 tmp.difficulty;
         }
         require(_totalDifficulty > 0, "total diffculty");
-        verifyHeader(tmp, getHeader(tmp.height-1, tmp.parentHash, found));
+        verifyHeader(tmp, getHeader(tmp.height - 1, tmp.parentHash, found));
         // update to unconfirmed
         // tmp = ethHeader({
         //     height: _height,
@@ -211,10 +202,14 @@ contract EthBridgeV2 {
         return 2;
     }
 
-    function getHeader(uint _height, bytes32 _hash, int256 found) public view returns(ethHeader memory){                        
-        if(found==1){
+    function getHeader(
+        uint256 _height,
+        bytes32 _hash,
+        int256 found
+    ) public view returns (ethHeader memory) {
+        if (found == 1) {
             return latest;
-        }else if (found ==2){
+        } else if (found == 2) {
             return unconfirmed[_height][_hash];
         }
     }
@@ -243,48 +238,68 @@ contract EthBridgeV2 {
         }
     }
 
-    function verifyHeaderHash(bytes32 _hash, bytes memory _headers) internal pure {
+    function verifyHeaderHash(bytes32 _hash, bytes memory _headers)
+        internal
+        pure
+    {
         bytes32 _headerHash = keccak256(_headers);
         require(_headerHash == _hash, "hash verified");
     }
 
     // see YP section 4.3.4 "Block Header Validity"
-    function verifyHeader(ethHeader memory _header, ethHeader memory _parent) internal view{
+    function verifyHeader(ethHeader memory _header, ethHeader memory _parent)
+        internal
+        view
+    {
         // require(_header.extra.length<32, "extra-data too long");
-        require(_header.timestamp>=_parent.timestamp, "timestamp older than parent");
+        require(
+            _header.timestamp >= _parent.timestamp,
+            "timestamp older than parent"
+        );
         // todo
         // require(_header.GasUsed <= _header.GasLimit, "invalid gasUsed && gasLimit");
         // require(mul(absSub(_header.GasLimit, _parent.GasLimit), 1024) < _parent.GasLimit, "invalid gas limit 1");
         // require(header.GasLimit>=500, "invalid gas limit 2");
-        require(_header.difficulty == calDifficulty(_header.timestamp, _parent), "invalid difficulty");
+        require(
+            _header.difficulty == calDifficulty(_header.timestamp, _parent),
+            "invalid difficulty"
+        );
     }
+
     // diff = (parent_diff +
-	//         (parent_diff / 2048 * max((2 if len(parent.uncles) else 1) - ((timestamp - parent.timestamp) // 9), -99))
-	//        ) + 2^(periodCount - 2)
+    //         (parent_diff / 2048 * max((2 if len(parent.uncles) else 1) - ((timestamp - parent.timestamp) // 9), -99))
+    //        ) + 2^(periodCount - 2)
     // see https://github.com/ethereum/EIPs/issues/100, https://eips.ethereum.org/EIPS/eip-1234, https://eips.ethereum.org/EIPS/eip-2384
-    function calDifficulty(uint timestamp, ethHeader memory _parent) internal view returns(uint){
+    function calDifficulty(uint256 timestamp, ethHeader memory _parent)
+        internal
+        view
+        returns (uint256)
+    {
         // todo
-        uint diff = _parent.difficulty;
-        uint unclesNum = 1;
-        if(_parent.unclesHash != hex"1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"){
+        uint256 diff = _parent.difficulty;
+        uint256 unclesNum = 1;
+        if (
+            _parent.unclesHash !=
+            hex"1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"
+        ) {
             unclesNum = 2;
         }
-        uint x1 = div(timestamp - _parent.timestamp, 9);
-        uint x2 = 0;
-        if(unclesNum>=x1) {
+        uint256 x1 = div(timestamp - _parent.timestamp, 9);
+        uint256 x2 = 0;
+        if (unclesNum >= x1) {
             x2 = add(diff, mul(div(diff, 2048), unclesNum - x1));
-        }else if(x1-unclesNum<99){
+        } else if (x1 - unclesNum < 99) {
             x2 = sub(diff, mul(div(diff, 2048), x1 - unclesNum));
-        }else{
+        } else {
             x2 = sub(diff, mul(div(diff, 2048), 99));
         }
-        uint fakeBlockNumber = _parent.height - 8999999;
-        uint expDiffPeriod = 100000;
-        uint periodCount = div(fakeBlockNumber, expDiffPeriod);
+        uint256 fakeBlockNumber = _parent.height - 8999999;
+        uint256 expDiffPeriod = 100000;
+        uint256 periodCount = div(fakeBlockNumber, expDiffPeriod);
 
-        uint x3 = x2;
-        if(periodCount>=2){                
-            x3 = x3 + 2**(periodCount-2);
+        uint256 x3 = x2;
+        if (periodCount >= 2) {
+            x3 = x3 + 2**(periodCount - 2);
         }
         return x3;
     }
@@ -295,19 +310,22 @@ contract EthBridgeV2 {
 
         return c;
     }
+
     function sub(uint256 a, uint256 b) internal pure returns (uint256) {
         require(b <= a, "SafeMath: subtraction overflow");
         uint256 c = a - b;
 
         return c;
     }
+
     function absSub(uint256 a, uint256 b) internal pure returns (uint256) {
-        if(a>=b){
-            return a-b;
-        }else{
-            return b-a;
+        if (a >= b) {
+            return a - b;
+        } else {
+            return b - a;
         }
     }
+
     function div(uint256 a, uint256 b) internal pure returns (uint256) {
         require(b > 0, "SafeMath: division by zero");
         uint256 c = a / b;
@@ -315,6 +333,7 @@ contract EthBridgeV2 {
 
         return c;
     }
+
     function mul(uint256 a, uint256 b) internal pure returns (uint256) {
         // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
         // benefit is lost if 'b' is also tested.
@@ -328,6 +347,7 @@ contract EthBridgeV2 {
 
         return c;
     }
+
     function bytesToUint256(bytes memory bs) internal pure returns (uint256) {
         uint256 len = bs.length;
         uint256 result;
@@ -442,12 +462,7 @@ contract EthBridgeV2 {
         );
 
         require(
-            merkleVerify(
-                value,
-                encodedPath,
-                rlpParentNodes,
-                root
-            ),
+            merkleVerify(value, encodedPath, rlpParentNodes, root),
             "receipt proof"
         );
     }
@@ -525,8 +540,6 @@ contract EthBridgeV2 {
             rlpToUint(args[2])
         );
     }
-
-    
 
     function encodeListBloom(bytes[] memory arr, bool[] memory flags)
         internal
@@ -675,7 +688,6 @@ contract EthBridgeV2 {
         return bytes32(rlpToUint(self));
     }
 
-
     function rlpToUint(RLPItem memory item) internal pure returns (uint256) {
         require(item.len > 0 && item.len <= 33);
 
@@ -696,8 +708,11 @@ contract EthBridgeV2 {
         return result;
     }
 
-
-    function rlpToBytes(RLPItem memory item) internal pure returns (bytes memory) {
+    function rlpToBytes(RLPItem memory item)
+        internal
+        pure
+        returns (bytes memory)
+    {
         require(item.len > 0);
 
         uint256 offset = _payloadOffset(item.memPtr);
@@ -849,6 +864,7 @@ contract EthBridgeV2 {
         }
         return true;
     }
+
     /*
      * @dev Verifies a merkle patricia proof.
      * @param value The terminating value in the trie.
