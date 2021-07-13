@@ -41,12 +41,6 @@ describe('Vault Inputs Outputs', function () {
 
     vault.connect(account1);
 
-    await expect(vault.increment())
-      .to.emit(vault, 'ValueChanged')
-      .withArgs(0, 1);
-
-    expect(await vault.getCount()).to.equal(1);
-
     // await vault.output(account1.address, 0x123, ethers.utils.parseEther("1.0"), { value: ethers.utils.parseEther("1.0") })
     await expect(vault.output(account1.address, 0x123, ethers.utils.parseEther("1.0"), { value: ethers.utils.parseEther("1.0") }))
       .to.emit(vault, 'Output')
@@ -71,15 +65,13 @@ describe('Vault Inputs Outputs', function () {
       value: ethers.utils.parseEther("1.0")
     });
 
-    vault.connect(account1);
-
 
     const dest = ethers.constants.AddressZero
 
     const balanceOfZeroBefore = await prov.getBalance(dest);
 
     // await vault.input(keccak256('1'), account1.address, ethers.utils.parseEther("1.0"));
-    await expect(vault.input(keccak256('1'), dest, ethers.utils.parseEther("1.0")))
+    await expect(vault.connect(account1).input(keccak256('1'), dest, ethers.utils.parseEther("1.0")))
       .to.emit(vault, 'Input')
       .withArgs(ethers.utils.hexlify(keccak256('1')), dest, ethers.utils.parseEther("1.0"));
 
@@ -92,6 +84,30 @@ describe('Vault Inputs Outputs', function () {
     const balanceOfZero = await prov.getBalance(dest);
     assert.equal((balanceOfZero - balanceOfZeroBefore).toString(), ethers.utils.parseEther("1.0").toString());
 
+  });
+
+
+  it('Should input revert', async function () {
+    const [account1, other] = await ethers.getSigners();
+    const prov = ethers.provider;
+
+    await account1.sendTransaction({
+      to: vault.address,
+      value: ethers.utils.parseEther("1.0")
+    });
+
+    const dest = ethers.constants.AddressZero
+
+    const balanceOfZeroBefore = await prov.getBalance(dest);
+
+    await expect(vault.connect(other).input(keccak256('1'), dest, ethers.utils.parseEther("1.0")))
+      .to.be.revertedWith('Ownable: caller is not the owner');
+
+    const balance = await prov.getBalance(vault.address);
+    assert.equal(balance.toString(), ethers.utils.parseEther("1.0").toString());
+
+    const balanceOfZero = await prov.getBalance(dest);
+    assert.equal((balanceOfZero - balanceOfZeroBefore).toString(), ethers.utils.parseEther("0").toString());
   });
 
 });
