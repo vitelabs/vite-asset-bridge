@@ -6,19 +6,20 @@ import "./Keeper.sol";
 
 contract MultiSigKeeper is Keeper {
     // keccak256("1"+tokenId)
-    bytes32 constant SALT =
-        0xc89efdaa54c0f20c7adf612882df0950f5a951637e0307cdcb4c672f298b8bc6;
-    bytes32 prevHash = 0x0;
-    uint8 threshold;
-    IVault vault;
+    bytes32 public SALT;
+    bytes32 public prevHash = 0x0;
+    uint8 public threshold;
+    IVault public vault;
 
-    mapping(address => bool) keepers;
+    mapping(address => bool) public keepers;
 
     constructor(
+        bytes32 _salt,
         address _vault,
         address[] memory _addrs,
         uint8 _threshold
     ) {
+        SALT = _salt;
         vault = IVault(_vault);
         uint256 len = _addrs.length;
         require(len > _threshold, "threshold required");
@@ -63,7 +64,10 @@ contract MultiSigKeeper is Keeper {
                 sigR[i],
                 sigS[i]
             );
-            require(recovered > lastAdd && keepers[recovered]);
+            require(
+                recovered > lastAdd && keepers[recovered],
+                "signature required"
+            );
             lastAdd = recovered;
         }
         prevHash = txInputHash;

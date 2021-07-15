@@ -1,4 +1,4 @@
-// test/vault_test.js
+// test/keeper_default_test.js
 // Load dependencies
 const { use, expect, assert } = require('chai');
 const { solidity } = require('ethereum-waffle');
@@ -41,7 +41,6 @@ describe('DefaultKeeper', function () {
       to: vault.address,
       value: ethers.utils.parseEther("1.0")
     });
-
 
     const dest = ethers.constants.AddressZero
 
