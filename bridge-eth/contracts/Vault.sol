@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 interface IVault {
     event Input(bytes32 id, address dest, uint256 value);
-    event Output(address src, bytes dest, uint256 value);
+    event Output(bytes32 id, address src, bytes dest, uint256 value);
 
     /**
      *
@@ -38,6 +38,13 @@ contract Vault is IVault, Ownable {
         require(success, "Transfer failed.");
     }
 
+    bytes32 public salt;
+    bytes32 public prevId = 0x0;
+
+    constructor(bytes32 _salt) {
+        salt = _salt;
+    }
+
     function output(
         address src,
         bytes calldata dest,
@@ -45,7 +52,9 @@ contract Vault is IVault, Ownable {
     ) public payable override {
         _requireTransfer(src, value);
 
-        emit Output(src, dest, value);
+        bytes32 id = keccak256(abi.encodePacked(salt, dest, value, prevId));
+        emit Output(id, src, dest, value);
+        prevId = id;
     }
 
     function _requireTransfer(address src, uint256 value) internal {

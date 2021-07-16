@@ -9,9 +9,9 @@ use(solidity);
 
 let vault;
 
-async function deployContract(name) {
+async function deployContract(name, args) {
   let contractMode = await ethers.getContractFactory(name);
-  let contractIns = await contractMode.deploy();
+  let contractIns = await contractMode.deploy(...args);
   await contractIns.deployed();
   return contractIns;
 }
@@ -19,7 +19,7 @@ async function deployContract(name) {
 // Start test block
 describe('Vault Inputs Outputs', function () {
   beforeEach(async function () {
-    vault = await deployContract('Vault');
+    vault = await deployContract('Vault', [keccak256('0x123')]);
   });
 
   it('Should transfer', async function () {
@@ -41,10 +41,16 @@ describe('Vault Inputs Outputs', function () {
 
     vault.connect(account1);
 
+    const dest = 0x123;
+    const value = ethers.utils.parseEther("1.0");
+    const prevHash = await vault.prevId();
+
+    const id = ethers.utils.solidityKeccak256(['bytes32', 'bytes', 'uint256', 'bytes32'], [keccak256('0x123'), dest, value, prevHash]);
+
     // await vault.output(account1.address, 0x123, ethers.utils.parseEther("1.0"), { value: ethers.utils.parseEther("1.0") })
-    await expect(vault.output(account1.address, 0x123, ethers.utils.parseEther("1.0"), { value: ethers.utils.parseEther("1.0") }))
+    await expect(vault.output(account1.address, dest, value, { value: value }))
       .to.emit(vault, 'Output')
-      .withArgs(account1.address, ethers.utils.hexlify(0x123), ethers.utils.parseEther("1.0"));
+      .withArgs(id, account1.address, ethers.utils.hexlify(dest), value);
 
     // const events = await vault.queryFilter(vault.filters.Output(), 0, 1000)
     // console.log(events);

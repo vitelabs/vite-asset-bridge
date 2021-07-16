@@ -51,7 +51,6 @@ contract MultiSigKeeper is Keeper {
             "length reqired"
         );
 
-        // EIP712 scheme: https://github.com/ethereum/EIPs/blob/master/EIPS/eip-712.md
         bytes32 txInputHash = keccak256(
             abi.encodePacked(SALT, dest, value, prevHash)
         );
