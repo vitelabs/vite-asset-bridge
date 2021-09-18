@@ -1,4 +1,4 @@
-pragma soliditypp ^0.4.5;
+pragma soliditypp >=0.4.5;
 pragma experimental ABIEncoderV2;
 
 contract Vault {
@@ -7,7 +7,7 @@ contract Vault {
 
   tokenId tid;
 
-  constructor(tokenId _tid) public{
+  constructor(tokenId _tid) {
     tid = _tid;
   }  
 
@@ -16,7 +16,8 @@ contract Vault {
       address dest,
       uint256 value
   ) {
-    address(dest).transfer(tid,value);
+    // todo
+    // send{token:id, amount:value}(dest);
     emit Input(id, dest, value);
   }
 
