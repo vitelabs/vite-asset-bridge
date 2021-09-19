@@ -1,7 +1,5 @@
-import stream from "stream";
-import getStream from "get-stream";
-const Docker = require("dockerode");
 import { compiler } from "./config";
+import { dockerRun } from "./dockerRun";
 import os from "os";
 
 function dockerImage() {
@@ -19,16 +17,8 @@ interface CompileResult {
 }
 
 async function _version() {
-  const docker = new Docker();
-  const pass = new stream.PassThrough();
-  const result = await docker.run(dockerImage(), ["--version"], pass);
-  pass.end();
-  const output = result[0];
-  const container = result[1];
-
-  // console.log(output.StatusCode, container.id);
-  const out = await getStream(pass);
-  return parseVersion(out);
+  const [result, _] = await dockerRun(true, dockerImage(), ["--version"], {});
+  return parseVersion(result);
 }
 
 function parseVersion(output: string): string {
@@ -45,25 +35,17 @@ function parseVersion(output: string): string {
 
 async function _compile(filename: string): Promise<CompileResult> {
   const baseDir = `${compiler.sourceDir}`;
-  const docker = new Docker();
-  const pass = new stream.PassThrough();
-  const result = await docker.run(
+  const [result, _] = await dockerRun(
+    true,
     dockerImage(),
     ["--bin", "--abi", `/root/tmp/contracts/${filename}`],
-    pass,
     {
       HostConfig: {
         Binds: [`${baseDir}:/root/tmp/contracts`],
       },
     }
   );
-  pass.end();
-  const output = result[0];
-  const container = result[1];
-
-  // console.log(output.StatusCode, container.id);
-  const out = await getStream(pass);
-  return parse(out);
+  return parse(result);
 }
 
 function parse(output: string): CompileResult {

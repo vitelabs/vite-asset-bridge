@@ -4,11 +4,8 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "pre": "export VITE_CONTRACTS_ROOT=$PWD/contracts",
-    "pretest": "npm run pre",
-    "test": "./node_modules/.bin/mocha -r ts-node/register 'test/**/*.ts'",
-    "prestart": "npm run pre",
-    "start": "./node_modules/.bin/ts-node src/app.ts"
+    "test": "export VITE_CONTRACTS_ROOT=$PWD/contracts && ./node_modules/.bin/mocha -r ts-node/register 'test/*.ts'",
+    "accounts": "export VITE_CONTRACTS_ROOT=$PWD/contracts && ./node_modules/.bin/ts-node src/accounts.ts"
   },
   "author": "shan@vite.org",
   "license": "ISC",
