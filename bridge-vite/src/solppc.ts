@@ -1,5 +1,5 @@
 import { compiler } from "./config";
-import { dockerRun } from "./dockerRun";
+import { dockerRun } from "./docker";
 import os from "os";
 
 function dockerImage() {
@@ -17,7 +17,11 @@ interface CompileResult {
 }
 
 async function _version() {
-  const [result, _] = await dockerRun(true, dockerImage(), ["--version"], {});
+  const [result, _] = await dockerRun(true, dockerImage(), ["--version"], {
+    HostConfig: {
+      AutoRemove: true,
+    },
+  });
   return parseVersion(result);
 }
 
@@ -35,16 +39,21 @@ function parseVersion(output: string): string {
 
 async function _compile(filename: string): Promise<CompileResult> {
   const baseDir = `${compiler.sourceDir}`;
+  console.log(
+    `docker run --rm -v ${baseDir}:/root/tmp/contracts ${dockerImage()} --bin --abi /root/tmp/contracts/${filename}`
+  );
   const [result, _] = await dockerRun(
     true,
     dockerImage(),
     ["--bin", "--abi", `/root/tmp/contracts/${filename}`],
     {
       HostConfig: {
+        AutoRemove: true,
         Binds: [`${baseDir}:/root/tmp/contracts`],
       },
     }
   );
+  // console.log(result);
   return parse(result);
 }
 

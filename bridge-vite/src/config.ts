@@ -2,6 +2,7 @@ import _cfg from "./vitejs.config.json";
 
 const _network = _cfg.networks.local;
 const _compiler = _cfg.compilers.solppc;
+const _node = _cfg.nodes.virtual;
 
 interface Network {
   url: string;
@@ -15,9 +16,17 @@ interface Compiler {
   sourceDir?: string;
 }
 
+interface Node {
+  name: string;
+  version: string;
+  build: string;
+}
+
 export const network: Network = _network;
 
 export const compiler: Compiler = compilerCfg();
+
+export const node: Node = _node;
 
 function compilerCfg(): Compiler {
   let result: Compiler = _compiler;

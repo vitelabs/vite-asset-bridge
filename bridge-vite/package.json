@@ -13,6 +13,7 @@
     "@types/chai": "^4.2.21",
     "@types/mocha": "^9.0.0",
     "@types/node": "^14.6.2",
+    "axios": "^0.21.4",
     "chai": "^4.3.4",
     "dockerode": "^3.3.1",
     "get-stream": "^6.0.1",

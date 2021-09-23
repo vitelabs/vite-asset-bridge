@@ -1,0 +1,17 @@
+pragma soliditypp >=0.4.5;
+
+contract Hello {
+  event Hello(address src, address dest, uint256 value);
+
+  tokenId tid;
+
+  constructor(tokenId _tid) {
+    tid = _tid;
+  }  
+
+  onMessage hello(address dest) {
+    // dest.call{amount: msg.amount, token: tid}();
+    dest.transfer(tid,msg.amount);
+    emit Hello(dest,dest,msg.amount);
+  }
+}

@@ -18,10 +18,10 @@ export const accounts = _accounts;
 
 export const defaultWallet = viteWallet;
 
-export function selectAccount(address: string) {
-  return accounts.filter((t) => {
-    t.address === address;
-  })[0];
+export function selectAccount(address: string): any {
+  return accounts.find((t) => {
+    return t.address.toString() === address;
+  });
 }
 
 console.log(__dirname);

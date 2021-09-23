@@ -62,8 +62,8 @@ async function _deployContract(
     randomDegree: randomDegree,
     responseLatency: responseLatency,
     params: params,
+    address: address,
   });
-
   await signAndSendAccountBlock(block, account.privateKey);
 }
 
