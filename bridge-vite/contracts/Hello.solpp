@@ -4,14 +4,16 @@ contract Hello {
   event Hello(address src, address dest, uint256 value);
 
   tokenId tid;
+  address public lastTo;
 
   constructor(tokenId _tid) {
     tid = _tid;
-  }  
+  }
 
   onMessage hello(address dest) {
     // dest.call{amount: msg.amount, token: tid}();
-    dest.transfer(tid,msg.amount);
+    dest.transfer(tid, msg.amount);
+    lastTo = dest;
     emit Hello(dest,dest,msg.amount);
   }
 }

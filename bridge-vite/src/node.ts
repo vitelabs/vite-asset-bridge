@@ -7,3 +7,55 @@ export function mint() {
 export function height() {
   return provider.request("ledger_getSnapshotChainHeight");
 }
+
+export async function accountBlock(hash: string) {
+  return provider.request("ledger_getAccountBlockByHash", hash);
+}
+
+export function isReceived(hash: string) {
+  return accountBlock(hash).then((block) => {
+    if (!block) {
+      return false;
+    } else {
+      if (!block.receiveBlockHash) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+  });
+}
+
+export function isConfirmed(hash: string) {
+  return accountBlock(hash).then((block) => {
+    if (!block) {
+      return false;
+    } else {
+      if (!block.confirmedHash) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+  });
+}
+
+export async function awaitReceived(hash: string) {
+  while (!(await isReceived(hash))) {
+    await sleep(1000);
+  }
+  return await accountBlock(hash);
+}
+
+export async function awaitConfirmed(hash: string) {
+  while (!(await isConfirmed(hash))) {
+    await sleep(1000);
+  }
+  return await accountBlock(hash);
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}

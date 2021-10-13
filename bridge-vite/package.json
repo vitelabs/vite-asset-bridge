@@ -4,7 +4,7 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "test": "export VITE_CONTRACTS_ROOT=$PWD/contracts && ./node_modules/.bin/mocha -r ts-node/register 'test/*.ts'",
+    "test": "export VITE_CONTRACTS_ROOT=$PWD/contracts && ./node_modules/.bin/mocha -r ts-node/register ",
     "accounts": "export VITE_CONTRACTS_ROOT=$PWD/contracts && ./node_modules/.bin/ts-node src/accounts.ts"
   },
   "author": "shan@vite.org",

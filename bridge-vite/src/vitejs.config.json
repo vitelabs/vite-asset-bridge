@@ -8,7 +8,7 @@
   "compilers": {
     "solppc": {
       "name": "solppc",
-      "version": "v0.8.0",
+      "version": "0.8.0",
       "build": "nightly"
     }
   },
