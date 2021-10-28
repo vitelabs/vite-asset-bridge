@@ -1,0 +1,59 @@
+pragma soliditypp >=0.4.5;
+pragma experimental ABIEncoderV2;
+
+contract Channel {
+  constructor(tokenId _tid) payable {
+    tid = _tid;
+  }  
+
+  
+
+  tokenId tid;
+
+
+  // ----------------------------
+
+  uint256 public inputIndex;
+  bytes32 public prevInputId;
+  event Input(uint256 index, bytes32 id, bytes dest, uint256 value);
+
+  onMessage input(
+      bytes calldata dest,
+      uint256 value
+  ) payable {
+    require(msg.tokenid == tid, "require tokenid");
+    require(msg.amount == value, "require value");
+
+    bytes32 id = keccak256(abi.encodePacked(inputIndex, dest, value, prevInputId));
+    inputIndex = inputIndex + 1;
+
+    emit Input(inputIndex, id, dest, value);
+    prevInputId = id;
+  }
+
+
+
+  // ------------------------------------------------------------------------------------------------
+  // ------------------------------------------------------------------------------------------------
+
+
+  uint256 public outputIndex;
+  bytes32 public prevOutputId;
+  event Output(uint256 index, bytes32 id, address dest, uint256 value);
+
+  onMessage output(
+      bytes32 id,
+      address dest,
+      uint256 value
+  ) {
+	bytes32 nextId = keccak256(abi.encodePacked(outputIndex, dest, value, prevOutputId));
+	require(nextId == id, "id verify failed");
+    dest.transfer(tid, value);
+    outputIndex = outputIndex+1;
+	prevOutputId = nextId;
+    emit Output(outputIndex, id, dest, value);
+  }
+
+
+  receive() external payable {}
+}

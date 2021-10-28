@@ -92,10 +92,26 @@ export class DeployedContract {
     this.offChainCode = Buffer.from(code, "hex").toString("base64");
   }
 
+  async awaitCall(
+    from: string,
+    methodName: string,
+    params: any[],
+    {
+      tokenId = Vite_TokenId,
+      amount = "0",
+    }: { tokenId?: string; amount?: string }
+  ) {
+    const block = await this.call(from, methodName, params, {
+      tokenId,
+      amount,
+    });
+    return await awaitReceived(block.hash);
+  }
+
   async call(
     from: string,
     methodName: string,
-    params: [any],
+    params: any[],
     {
       tokenId = Vite_TokenId,
       amount = "0",
@@ -133,4 +149,24 @@ export class DeployedContract {
       params: params,
     });
   }
+}
+
+// send amount to address
+export async function awaitSend(
+  fromAddress: string,
+  toAddress: string,
+  tokenId: string,
+  amount: string
+) {
+  const block = accountBlock.createAccountBlock("send", {
+    address: fromAddress,
+    toAddress: toAddress,
+    tokenId: tokenId,
+    amount: amount,
+  });
+  const sentBlock = await signAndSend(block, fromAddress);
+  const receivedBlock = await awaitReceived(sentBlock.hash);
+  await mint();
+  const confirmedBlock = await awaitConfirmed(receivedBlock.receiveBlockHash);
+  return { send: receivedBlock, receive: confirmedBlock };
 }

@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@vite/vitejs": "^2.3.14",
-    "@vite/vitejs-http": "^2.3.14"
+    "@vite/vitejs-http": "^2.3.14",
+    "ethers": "^5.5.1"
   }
 }

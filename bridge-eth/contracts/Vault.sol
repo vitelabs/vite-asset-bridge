@@ -1,65 +1,76 @@
-// contracts/Vault.sol
-// SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.7.3;
-import "@openzeppelin/contracts/access/Ownable.sol";
+// // contracts/Vault.sol
+// // SPDX-License-Identifier: GPL-3.0
+// pragma solidity ^0.7.3;
+// import "@openzeppelin/contracts/access/Ownable.sol";
 
-interface IVault {
-    event Input(bytes32 id, address dest, uint256 value);
-    event Output(bytes32 id, address src, bytes dest, uint256 value);
+// interface IVault {
+//     // event Input(bytes32 id, address dest, uint256 value);
+//     // event Output(bytes32 id, address src, bytes dest, uint256 value);
 
-    /**
-     *
-     */
-    function input(
-        bytes32 id,
-        address dest,
-        uint256 value
-    ) external;
+//     // /**
+//     //  *
+//     //  */
+//     // function input(
+//     //     bytes32 id,
+//     //     address dest,
+//     //     uint256 value
+//     // ) external;
 
-    function output(
-        address src,
-        bytes calldata dest,
-        uint256 value
-    ) external payable;
-}
+//     // function output(
+//     //     address src,
+//     //     bytes calldata dest,
+//     //     uint256 value
+//     // ) external payable;
 
-contract Vault is IVault, Ownable {
-    function input(
-        bytes32 id,
-        address dest,
-        uint256 value
-    ) public override onlyOwner {
-        _transfer(dest, value);
-        emit Input(id, dest, value);
-    }
+//     event Input(
+//         uint256 index,
+//         bytes32 id,
+//         address src,
+//         bytes dest,
+//         uint256 value
+//     );
+// }
 
-    function _transfer(address dest, uint256 value) internal {
-        (bool success, ) = dest.call{value: value}("");
-        require(success, "Transfer failed.");
-    }
+// contract Vault is IVault, Ownable {
+//     // function input(
+//     //     bytes32 id,
+//     //     address dest,
+//     //     uint256 value
+//     // ) public override onlyOwner {
+//     //     _transfer(dest, value);
+//     //     emit Input(id, dest, value);
+//     // }
 
-    bytes32 public salt;
-    bytes32 public prevId = 0x0;
+//     // function _transfer(address dest, uint256 value) internal {
+//     //     (bool success, ) = dest.call{value: value}("");
+//     //     require(success, "Transfer failed.");
+//     // }
 
-    constructor(bytes32 _salt) {
-        salt = _salt;
-    }
+//     // bytes32 public salt;
+//     // bytes32 public prevId = 0x0;
 
-    function output(
-        address src,
-        bytes calldata dest,
-        uint256 value
-    ) public payable override {
-        _requireTransfer(src, value);
+//     // constructor(bytes32 _salt) {
+//     //     salt = _salt;
+//     // }
 
-        bytes32 id = keccak256(abi.encodePacked(salt, dest, value, prevId));
-        emit Output(id, src, dest, value);
-        prevId = id;
-    }
+//     uint256 public inputIndex;
+//     bytes public prevInputId;
 
-    function _requireTransfer(address src, uint256 value) internal {
-        require(msg.value == value, "Transfer Require failed.");
-    }
+//     function input(bytes calldata dest, uint256 value) public payable override {
+//         _requireTransfer(src, value);
 
-    receive() external payable {}
-}
+//         bytes32 id = keccak256(
+//             abi.encodePacked(inputIndex, dest, value, prevInputId)
+//         );
+
+//         intputIndex = intputIndex + 1;
+//         emit Input(intputIndex, id, dest, value);
+//         prevInputId = id;
+//     }
+
+//     function _requireTransfer(uint256 value) internal {
+//         require(msg.value == value, "Transfer Require failed.");
+//     }
+
+//     receive() external payable {}
+// }
