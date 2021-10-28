@@ -9,6 +9,7 @@ use(solidity);
 
 let channel;
 let erc20;
+let keeper;
 
 async function deployContract(name, args) {
   let contractMode = await ethers.getContractFactory(name);
@@ -21,7 +22,11 @@ async function deployContract(name, args) {
 describe("Channel Inputs Outputs", function () {
   beforeEach(async function () {
     erc20 = await deployContract("ERC20Token", []);
-    channel = await deployContract("ChannelERC20", [erc20.address]);
+    keeper = await deployContract("KeeperNone", []);
+    channel = await deployContract("ChannelERC20", [
+      erc20.address,
+      keeper.address,
+    ]);
   });
 
   it("Should input", async function () {

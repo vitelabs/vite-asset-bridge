@@ -4,6 +4,7 @@ pragma solidity ^0.7.3;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "./Keeper.sol";
 
 contract ChannelERC20 {
     event Input(uint256 index, bytes32 id, bytes dest, uint256 value);
@@ -11,9 +12,11 @@ contract ChannelERC20 {
     uint256 public inputIndex;
     bytes32 public prevInputId;
     IERC20 public token;
+    IKeeper public keeper;
 
-    constructor(IERC20 _token) public {
+    constructor(IERC20 _token, IKeeper _keeper) public {
         token = _token;
+        keeper = _keeper;
     }
 
     function input(bytes calldata dest, uint256 value) public payable {
@@ -51,6 +54,8 @@ contract ChannelERC20 {
         );
         // bytes32 nextId = keccak256(abi.encodePacked(dest));
         require(nextId == id, "id verify failed");
+
+        keeper.approved(id);
 
         SafeERC20.safeTransfer(token, dest, value);
 
