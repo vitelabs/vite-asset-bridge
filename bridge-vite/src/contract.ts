@@ -1,6 +1,12 @@
 import { accountBlock } from "@vite/vitejs";
 import { signAndSend } from "./sender";
-import { awaitConfirmed, awaitReceived, mint } from "./node";
+import {
+  awaitConfirmed,
+  awaitReceived,
+  mint,
+  accountHeight,
+  accountUnReceived,
+} from "./node";
 import { constant } from "@vite/vitejs";
 import { provider } from "./provider";
 const { Contracts, Vite_TokenId } = constant;
@@ -18,7 +24,7 @@ export async function deploy(
     responseLatency?: Number;
     quotaMultiplier?: Number;
     randomDegree?: Number;
-    params?: string | Array<string | boolean>;
+    params?: string | Array<string | boolean | Object>;
   }
 ) {
   const block = accountBlock.createAccountBlock("createContract", {
@@ -42,6 +48,14 @@ export async function stakeQuota(address: string, beneficiaryAddress: string) {
   return signAndSend(block, address);
 }
 
+export async function awaitReceive(address: string, sendHash: string) {
+  const block = accountBlock.createAccountBlock("receive", {
+    address: address,
+    sendBlockHash: sendHash,
+  });
+  return signAndSend(block, address);
+}
+
 export async function awaitDeploy(
   address: string,
   abi: Object | Array<Object>,
@@ -55,7 +69,7 @@ export async function awaitDeploy(
     responseLatency?: Number;
     quotaMultiplier?: Number;
     randomDegree?: Number;
-    params?: string | Array<string | boolean>;
+    params?: string | Array<string | boolean | Object>;
   }
 ) {
   const deployResult = await deploy(address, abi, code, {
@@ -155,8 +169,8 @@ export class DeployedContract {
 export async function awaitSend(
   fromAddress: string,
   toAddress: string,
-  tokenId: string,
-  amount: string
+  tokenId = "tti_5649544520544f4b454e6e40",
+  amount = "0"
 ) {
   const block = accountBlock.createAccountBlock("send", {
     address: fromAddress,
@@ -169,4 +183,34 @@ export async function awaitSend(
   await mint();
   const confirmedBlock = await awaitConfirmed(receivedBlock.receiveBlockHash);
   return { send: receivedBlock, receive: confirmedBlock };
+}
+
+export async function awaitReceiveAll(account: string) {
+  const blocks = await accountUnReceived(account);
+  if (blocks) {
+    await blocks.forEach(async (block: any) => {
+      await awaitReceive(account, block.hash);
+    });
+  }
+}
+
+export async function awaitInitAccount(from: string, to: string) {
+  if ((await accountHeight(to)) > 0) {
+    return;
+  }
+  const stakeResult = stakeQuota(from, to);
+  await stakeResult;
+
+  const tokenId = "tti_5649544520544f4b454e6e40";
+  const amount = "0";
+  const block = accountBlock.createAccountBlock("send", {
+    address: from,
+    toAddress: to,
+    tokenId: tokenId,
+    amount: amount,
+  });
+  const sendResult = signAndSend(block, from);
+  const receivedResult = awaitReceiveAll(to);
+  await sendResult;
+  await receivedResult;
 }

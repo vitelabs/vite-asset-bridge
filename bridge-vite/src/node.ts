@@ -7,6 +7,24 @@ export function mint() {
 export function height() {
   return provider.request("ledger_getSnapshotChainHeight");
 }
+export function accountHeight(to: string) {
+  return provider.request("ledger_getLatestAccountBlock", to).then((block) => {
+    if (block) {
+      return block.height;
+    } else {
+      return 0;
+    }
+  });
+}
+
+export function accountUnReceived(account: string) {
+  return provider.request(
+    "ledger_getUnreceivedBlocksByAddress",
+    account,
+    0,
+    100
+  );
+}
 
 export async function accountBlock(hash: string) {
   return provider.request("ledger_getAccountBlockByHash", hash);

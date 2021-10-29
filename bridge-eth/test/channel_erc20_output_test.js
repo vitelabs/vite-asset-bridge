@@ -145,6 +145,7 @@ async function multiSignId(_keeper, _id) {
     signature.address = ethers.utils.computeAddress(
       ethers.utils.recoverPublicKey(raw, signature)
     );
+    console.log(signature.v, signature.r, signature.s);
     sigs.push(signature);
   });
 

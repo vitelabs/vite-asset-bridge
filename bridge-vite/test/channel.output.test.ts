@@ -5,6 +5,7 @@ import {
   awaitDeploy,
   DeployedContract,
   awaitSend,
+  awaitInitAccount,
 } from "../src/contract";
 import { awaitReceived, awaitConfirmed } from "../src/node";
 import { accounts } from "../src/accounts";
@@ -19,11 +20,24 @@ describe("call test", () => {
     const result = await compile("Channel.solpp");
     await mintResult;
 
+    await awaitInitAccount(accounts[0].address, accounts[1].address);
+    await awaitInitAccount(accounts[0].address, accounts[2].address);
+
     const { send, receive } = await awaitDeploy(
       accounts[0].address,
       result.abiArr[0],
       result.byteCodeArr[0],
-      { params: ["tti_5649544520544f4b454e6e40"] }
+      {
+        params: [
+          "tti_5649544520544f4b454e6e40",
+          [
+            "vite_cecce91eb5ed40879105e1c780c572d087bb6ec91db043f422",
+            "vite_0afd645ca4b97441cae39c51e0b29355cbccbf43440457be7b",
+            "vite_10930bed5611218376df608b976743fa3127b5f008e8f27f83",
+          ],
+          3,
+        ],
+      }
     );
     console.log("------", send, receive);
 
@@ -44,6 +58,14 @@ describe("call test", () => {
     //   tokenId: "tti_5649544520544f4b454e6e40",
     //   amount: "2000000000000000000",
     // });
+
+    {
+      const id =
+        "0xd98a7f2fd0c4bd24084c9e3b9d94e24d5bde99ddd9c034b259415747076ea03b";
+      await cc.awaitCall(accounts[0].address, "approveOutput", [id], {});
+      await cc.awaitCall(accounts[1].address, "approveOutput", [id], {});
+      await cc.awaitCall(accounts[2].address, "approveOutput", [id], {});
+    }
 
     await cc.awaitCall(
       accounts[0].address,
