@@ -4,7 +4,3 @@ docker run -p 127.0.0.1:48132:48132 --rm vitelabs/gvite-nightly:v2.10.4-latest v
 npm run test test/channel.input.test.ts
 npm run test test/channel.output.test.ts
 ```
-
-```
-
-```

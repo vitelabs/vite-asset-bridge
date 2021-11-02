@@ -30,6 +30,7 @@ contract ChannelETH {
 
     uint256 public outputIndex;
     bytes32 public prevOutputId;
+    mapping(bytes32 => bool) public blockedOutputIds;
 
     event Output(uint256 index, bytes32 id, address dest, uint256 value);
 
@@ -43,6 +44,8 @@ contract ChannelETH {
         );
         // bytes32 nextId = keccak256(abi.encodePacked(dest));
         require(nextId == id, "id verify failed");
+        require(!blockedOutputIds[nextId], "block verify failed");
+        blockedOutputIds[nextId] = true;
         dest.transfer(value);
         outputIndex = outputIndex + 1;
         prevOutputId = nextId;
