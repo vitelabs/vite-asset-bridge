@@ -1,0 +1,20 @@
+{
+  "tokens": [
+    {
+      "token": "VITE",
+      "decimals": 6,
+      "channels": [
+        [
+          {
+            "network": "ETH",
+            "contract": "0x0000000000000000"
+          },
+          {
+            "network": "VITE",
+            "contract": "vite_xxxxxxxxxxxxxx"
+          }
+        ]
+      ]
+    }
+  ]
+}
