@@ -7,7 +7,7 @@ import {
 } from "../src/contract";
 import { accounts } from "../src/accounts";
 import { compile } from "../src/compile";
-import { mint } from "../src/node";
+import { mint, sleep } from "../src/node";
 
 describe("call test", () => {
   // the tests container
@@ -18,6 +18,8 @@ describe("call test", () => {
 
     await awaitInitAccount(accounts[0].address, accounts[1].address);
     await awaitInitAccount(accounts[0].address, accounts[2].address);
+    await mint();
+    await mint();
     const { send, receive } = await awaitDeploy(
       accounts[0].address,
       result.abiArr[0],

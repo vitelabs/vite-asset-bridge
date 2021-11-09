@@ -1,6 +1,7 @@
 import { provider } from "./provider";
 
-export function mint() {
+export async function mint() {
+  await sleep(1000);
   return provider.request("miner_mine");
 }
 
@@ -72,7 +73,7 @@ export async function awaitConfirmed(hash: string) {
   return await accountBlock(hash);
 }
 
-function sleep(ms: number) {
+export function sleep(ms: number) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
