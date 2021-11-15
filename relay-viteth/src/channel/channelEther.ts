@@ -25,6 +25,8 @@ interface Input {
 
 const ConfirmedThreshold = 0n;
 
+const ETH_INFO_PATH_PREFIX = "./.channel_ether/info";
+
 export class ChannelEther {
   infoPath: string;
 
@@ -39,11 +41,12 @@ export class ChannelEther {
   etherKeeperThreshold: number;
 
   signerKey: string;
+  signer: ethers.Wallet;
 
   constructor(cfg: any) {
     this.etherChannelAbi = _channelAbi;
     this.etherKeeperAbi = _keeperAbi;
-    this.infoPath = "./.channel_ether/confirmedInfo";
+    this.infoPath = ETH_INFO_PATH_PREFIX;
     const path = `m/44'/60'/0'/0/${1}`;
     this.signerKey = ethers.Wallet.fromMnemonic(cfg.mnemonic, path).privateKey;
     this.etherChannelAddress = cfg.channelAddress;
@@ -61,16 +64,24 @@ export class ChannelEther {
       this.etherKeeperAbi,
       this.etherProvider
     );
+    this.etherKeeperThreshold = 100000;
+    this.signer = new ethers.Wallet(this.signerKey, this.etherProvider);
+  }
+  async init() {
+    this.etherKeeperThreshold = await this.etherKeeperContract.threshold();
   }
 
-  getConfirmedInfo(): ConfirmedInfo {
-    let json = utils.readJson(this.infoPath);
+  getInfo(prefix: string): any {
+    let json = utils.readJson(this.infoPath + prefix);
+    if (!json) {
+      return json;
+    }
     let info = JSON.parse(json);
     return info;
   }
 
-  updateConfirmedInfo(info: ConfirmedInfo) {
-    utils.writeJson(this.infoPath, JSON.stringify(info));
+  updateInfo(prefix: string, info: any) {
+    utils.writeJson(this.infoPath + prefix, JSON.stringify(info));
   }
 
   async scanConfirmedInputs(fromHeight: string) {
@@ -121,11 +132,12 @@ export class ChannelEther {
     };
     const signature = ethers.utils.joinSignature(expandedSig);
     const recoveredAddress = ethers.utils.recoverAddress(msg, signature);
-    return this.etherChannelContract.keepers(recoveredAddress);
+    // console.log("keeper", recoveredAddress);
+    return this.etherKeeperContract.keepers(recoveredAddress);
   }
 
   async approveId(msg: string, events: any[]) {
-    let sigs = [];
+    let sigs: any[] = [];
     events.forEach((sig) => {
       const address = ethers.utils.recoverAddress(msg, sig);
       sigs.push(Object.assign(sig, { address: address }));
@@ -141,7 +153,9 @@ export class ChannelEther {
     const vArr = sigs.map((s) => s.v);
     const sArr = sigs.map((s) => s.s);
 
-    await this.etherKeeperContract.approveId(vArr, rArr, sArr, msg);
+    await this.etherKeeperContract
+      .connect(this.signer)
+      .approveId(vArr, rArr, sArr, msg);
   }
 
   async signId(id: string) {

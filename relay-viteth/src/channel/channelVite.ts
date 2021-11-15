@@ -14,6 +14,8 @@ interface ConfirmedInfo {
   index: string;
 }
 
+const VITE_INFO_PATH_PREFIX = "./.channel_vite/info";
+
 const ConfirmedThreshold = 1;
 
 export class ChannelVite {
@@ -31,7 +33,7 @@ export class ChannelVite {
   constructor(cfg: any) {
     this.viteChannelAbi = _viteAbi;
     this.viteOffChainCode = Buffer.from(offChainCode, "hex").toString("base64");
-    this.infoPath = "./.channel_vite/confirmedInfo";
+    this.infoPath = VITE_INFO_PATH_PREFIX;
     this.viteProvider = new ViteAPI(new HTTP_RPC(cfg.url), () => {
       console.log("vite provider connected");
     });
@@ -44,6 +46,9 @@ export class ChannelVite {
 
   getInfo(prefix: string): any {
     let json = utils.readJson(this.infoPath + prefix);
+    if (!json) {
+      return json;
+    }
     let info = JSON.parse(json);
     return info;
   }
@@ -53,10 +58,12 @@ export class ChannelVite {
   }
 
   async scanInputEvents(fromHeight: string) {
+    console.log("vite", "scan input events", fromHeight);
     return this.scanEvents(fromHeight, "Input");
   }
 
   async scanInputProvedEvents(fromHeight: string) {
+    console.log("vite", "scan proved events", fromHeight);
     return this.scanEvents(fromHeight, "InputProved");
   }
 
@@ -73,6 +80,12 @@ export class ChannelVite {
       addressHeightRange: heightRange,
     });
 
+    if (!vmLogs) {
+      return {
+        toHeight: fromHeight,
+        events: [],
+      };
+    }
     const eventAbi = this.viteChannelAbi.find(
       (item: { name: string; type: string }) =>
         item.type === "event" && item.name === eventName

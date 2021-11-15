@@ -11,10 +11,16 @@ export class WorkflowViteEth {
   }
 
   async step1() {
-    const info = await this.channelVite.getInfo("_confirmed");
+    let info = await this.channelVite.getInfo("_confirmed");
+    if (!info) {
+      info = {
+        height: "0",
+        index: "0",
+      };
+    }
 
     const { toHeight, events } = await this.channelVite.scanInputEvents(
-      info.scannedHeight
+      info.height
     );
 
     if (!events || events.length === 0) {
@@ -26,77 +32,88 @@ export class WorkflowViteEth {
       // check input tx confirmed
       const isConfirmed = await txConfirmed(
         this.channelVite.viteProvider,
-        input.accountBlockHash
+        input.hash
       );
 
       if (!isConfirmed) {
         return;
       }
     }
+    console.log(input);
 
-    if (input.index != (BigInt(info.index) + 1n).toString()) {
+    if (input.event.index != (BigInt(info.index) + 1n).toString()) {
+      console.warn("index not match", info.index, input.event.index);
       return;
     }
 
-    const sig = await this.channelEther.signId(input.id);
+    const sig = await this.channelEther.signId("0x" + input.event.id);
 
-    await this.channelVite.proveInputId(sig.v, sig.r, sig.s, input.id);
+    await this.channelVite.proveInputId(sig.v, sig.r, sig.s, input.event.id);
 
     await this.channelVite.updateInfo("_confirmed", {
-      scannedHeight: input.accountBlockHeight,
-      index: input.index,
+      height: input.height,
+      index: input.event.index,
     });
   }
 
   async step2() {
-    const info = await this.channelVite.getInfo("_submit");
+    let info = await this.channelVite.getInfo("_submit");
+    if (!info) {
+      info = {
+        height: "0",
+        index: "0",
+      };
+    }
 
-    const { events } = await this.channelVite.scanInputEvents(
-      info.scannedHeight
-    );
+    const { events } = await this.channelVite.scanInputEvents(info.height);
 
     if (!events || events.length === 0) {
       return;
     }
 
     const input = events[0];
-    if (input.index != (BigInt(info.index) + 1n).toString()) {
+    console.log(input);
+    if (input.event.index != (BigInt(info.index) + 1n).toString()) {
       return;
     }
 
-    const proved = await this.channelVite.scanInputProvedEvents(
-      info.scannedHeight
-    );
-
+    const proved = await this.channelVite.scanInputProvedEvents(info.height);
+    console.log(proved);
     const provedEvents = await proved.events
       .filter((x: any) => {
-        return x.id === input.id;
+        return x.event.id === input.event.id;
       })
       .filter(async (x: any) => {
-        return await this.channelEther.isKeeper(x.id, x.sigR, x.sigS, x.sigV);
+        return await this.channelEther.isKeeper(
+          "0x" + x.event.id,
+          "0x" + x.event.sigR,
+          "0x" + x.event.sigS,
+          x.event.sigV
+        );
       });
 
     if (provedEvents.length < this.channelEther.etherKeeperThreshold) {
       return;
     }
 
-    console.log("ether approve id:", input.id);
+    console.log("ether approve id:", input.event.id);
+    console.log("approve input", JSON.stringify(provedEvents));
     await this.channelEther.approveId(
-      input.id,
+      "0x" + input.event.id,
       provedEvents
         .slice(0, this.channelEther.etherKeeperThreshold)
         .map((x: any) => {
           return {
-            r: x.sigR,
-            s: x.sigS,
-            v: x.sigV,
+            r: "0x" + x.event.sigR,
+            s: "0x" + x.event.sigS,
+            v: x.event.sigV,
           };
         })
     );
 
     await this.channelVite.updateInfo("_submit", {
-      scannedHeight: input.accountBlockHeight,
-      index: input.index,
+      height: input.height,
+      index: input.event.index,
     });
   }
 }

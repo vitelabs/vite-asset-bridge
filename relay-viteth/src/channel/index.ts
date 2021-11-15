@@ -23,12 +23,15 @@ export class Workflow {
       this.channelEther
     );
   }
+  async init() {
+    await this.channelEther.init();
+  }
 
   async work() {
     await Promise.all([
-      this.workflowEthVite.step1(),
+      // this.workflowEthVite.step1(),
+      // this.workflowEthVite.step2(),
       this.workflowViteEth.step1(),
-      this.workflowEthVite.step2(),
       this.workflowViteEth.step2(),
     ]);
   }

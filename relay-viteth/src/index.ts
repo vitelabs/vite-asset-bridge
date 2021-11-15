@@ -4,6 +4,8 @@ import { channels } from "./config";
 async function run() {
   const workflow = new Workflow(channels());
 
+  await workflow.init();
+
   while (true) {
     await workflow.work();
     await sleep(10000);
@@ -16,6 +18,11 @@ function sleep(ms: number) {
   });
 }
 
-run().then(() => {
-  console.log("done");
-});
+run()
+  .catch((e) => {
+    console.log(e);
+    console.log(typeof e);
+  })
+  .then(() => {
+    console.log("done");
+  });

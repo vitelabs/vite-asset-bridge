@@ -1,5 +1,6 @@
 import { ChannelVite } from "./channelVite";
 import { ChannelEther } from "./channelEther";
+import { wallet } from "@vite/vitejs";
 
 export class WorkflowEthVite {
   channelVite: ChannelVite;
@@ -11,7 +12,15 @@ export class WorkflowEthVite {
   }
 
   async step1() {
-    const info = await this.channelEther.getConfirmedInfo();
+    let info = await this.channelEther.getInfo("_confirmed");
+    if (!info) {
+      info = {
+        height: "0",
+        index: "0",
+        txIndex: -1,
+        logIndex: -1,
+      };
+    }
 
     const { toHeight, inputs } = await this.channelEther.scanConfirmedInputs(
       info.height
@@ -40,30 +49,50 @@ export class WorkflowEthVite {
       }
     });
 
-    if (filteredInputs.length === 0) {
-      await this.channelEther.updateConfirmedInfo({
+    if (filteredInputs.length === 0 && BigInt(toHeight) > BigInt(info.height)) {
+      await this.channelEther.updateInfo("_confirmed", {
         height: toHeight.toString(),
-        index: info.index,
+        index: info.index.toString(),
         txIndex: -1,
         logIndex: -1,
       });
       return;
     }
+    if (filteredInputs.length === 0) {
+      return;
+    }
     const input = filteredInputs[0];
+    console.log("input", input);
     if (input.index != (BigInt(info.index) + 1n).toString()) {
-      console.warn("warn index do not match", input.index, info.index);
+      console.warn("index do not match", input.index.toString(), info.index);
       return;
     }
 
-    await this.channelVite.approveAndExecOutput(
-      input.id,
-      input.event.dest,
-      input.event.value
+    const dest =
+      "0x" +
+      wallet.getOriginalAddressFromAddress(
+        "vite_40996a2ba285ad38930e09a43ee1bd0d84f756f65318e8073a"
+      );
+    console.log(dest);
+    console.log(
+      wallet.getAddressFromOriginalAddress(
+        "40996a2ba285ad38930e09a43ee1bd0d84f756f600"
+      )
     );
 
-    await this.channelEther.updateConfirmedInfo({
+    const destAddress = wallet.getAddressFromOriginalAddress(
+      input.event.dest.slice(2)
+    );
+    console.log(destAddress);
+    await this.channelVite.approveAndExecOutput(
+      input.id,
+      destAddress,
+      input.event.value.toString()
+    );
+
+    await this.channelEther.updateInfo("_confirmed", {
       height: String(input.height),
-      index: input.index,
+      index: input.index.toString(),
       txIndex: input.txIndex,
       logIndex: input.logIndex,
     });
