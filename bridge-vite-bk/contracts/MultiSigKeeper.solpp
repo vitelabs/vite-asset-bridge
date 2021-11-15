@@ -1,0 +1,128 @@
+pragma soliditypp >=0.4.5;
+pragma experimental ABIEncoderV2;
+
+contract MultiSigKeeper {
+	mapping(address => bool) keepers;
+	mapping(bytes32 => mapping(address => bool)) signed;
+	mapping(bytes32 => uint8) signedCnt;
+	// 0: pending , 1: success ing, 2: success, 3: error ing  4: error
+	mapping(bytes32 => uint8) status;
+
+	uint8 threshold;
+
+	address vault;
+
+	tokenId tid;
+
+	bytes32 salt;
+
+	bytes32 prevId;
+
+
+	// message input(bytes32 id, address dest, uint256 value);
+
+ 		
+	constructor(bytes32 _salt,
+        address _vault,
+        address[] memory _addrs,
+        uint8 _threshold,
+		tokenId _tid) public {
+		salt = _salt;
+		tid = _tid;
+		vault = _vault;
+		uint256 len = _addrs.length;
+        require(len > _threshold, "threshold required");
+        for (uint256 i = 0; i < len; i++) {
+            keepers[_addrs[i]] = true;
+        }
+        threshold = _threshold;
+	}  
+
+	
+	onMessage submitInput(bytes32 id, address dest, uint256 value)  {
+		bool success = sigInput(id,dest,value,1);
+		if(!success) {
+			return;
+		}
+		status[id] = 2;
+		// send{token: tid, amount: value}(vault, input(id, dest, value));
+    input(id, dest, value);
+		prevId = id;
+	}
+
+	onMessage errorInput(bytes32 id, address dest, uint256 value){
+		bool success = sigInput(id,dest,value,3);
+		if(!success) {
+			return;
+		}
+		status[id] = 4;
+		// ignore
+		prevId = id;
+	}
+
+	function sigInput(bytes32 id, address dest, uint256 amount, uint8 ing) internal returns(bool){
+		require(keepers[msg.sender], "required keeper");
+		require(id==keccak256(abi.encodePacked(salt, dest, amount, prevId)), "reqired srcId");
+		uint8 cnt = signedCnt[id];
+		
+		require(status[id] == 0 || status[id]==ing, "required status");
+		require(signed[id][msg.sender] == false, "reqired signed");
+
+		signed[id][msg.sender] = true;
+		signedCnt[id] = cnt + 1;
+		if(cnt==0){
+			require(status[id] == 0, "required status");
+			status[id] = ing;
+		}else{
+			require(status[id] == ing, "required status");
+		}
+
+		if(signedCnt[id] < threshold){
+			return false;
+		}else{
+			return true;
+		}
+	}
+
+	getter generateId(address dest, uint256 amount)  returns(bytes32){
+		return keccak256(abi.encodePacked(salt, dest, amount, prevId));
+	}
+	event Input(bytes32 id, address dest, uint256 value);
+  event Output(bytes32 id, address src, bytes dest, uint256 value);
+
+
+  function input(
+      bytes32 id,
+      address dest,
+      uint256 value
+  ) internal {
+    // send{token:id, amount:value}(dest);
+    emit Input(id, dest, value);
+  }
+
+//   bytes32 salt;
+//   bytes32 prevId;
+
+  onMessage output(
+      address src,
+      bytes calldata dest,
+      uint256 value
+  ) {
+    // require(msg.tokenid == tid, "require tokenid");
+    // require(msg.amount == value, "require value");
+    bytes32 id = keccak256(abi.encodePacked(salt, dest, value, prevId));
+    emit Output(id, src, dest, value);
+    prevId = id;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+

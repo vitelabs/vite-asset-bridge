@@ -1,0 +1,38 @@
+pragma soliditypp >=0.4.5;
+pragma experimental ABIEncoderV2;
+
+contract Vault {
+  event Input(bytes32 id, address dest, uint256 value);
+  event Output(bytes32 id, address src, bytes dest, uint256 value);
+
+  tokenId tid;
+
+  constructor(tokenId _tid) {
+    tid = _tid;
+  }  
+
+  onMessage input(
+      bytes32 id,
+      address dest,
+      uint256 value
+  ) {
+    // todo
+    // send{token:id, amount:value}(dest);
+    emit Input(id, dest, value);
+  }
+
+  bytes32 salt;
+  bytes32 prevId;
+
+  onMessage output(
+      address src,
+      bytes calldata dest,
+      uint256 value
+  ) payable {
+    require(msg.tokenid == tid, "require tokenid");
+    require(msg.amount == value, "require value");
+    bytes32 id = keccak256(abi.encodePacked(salt, dest, value, prevId));
+    emit Output(id, src, dest, value);
+    prevId = id;
+  }
+}

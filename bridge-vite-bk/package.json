@@ -1,0 +1,19 @@
+{
+  "name": "bridge-vite",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@vite/vitejs": "^2.3.14",
+    "@vite/vitejs-http": "^2.3.14"
+  }
+}

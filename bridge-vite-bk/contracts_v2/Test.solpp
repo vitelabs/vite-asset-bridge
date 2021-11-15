@@ -1,0 +1,59 @@
+pragma soliditypp >=0.4.5;
+
+contract Test1 {
+
+	bytes32 public id;
+  constructor(bytes32 _id, address[] memory addrs) {
+    id = _id;
+  }  
+}
+
+contract Test2 {
+  uint256 public id;
+
+  constructor(uint256 _id) {
+    id = _id;
+  } 
+}
+
+
+contract Test3{
+  mapping(address => bool) public keepers;
+	mapping(bytes32 => mapping(address => bool)) public signed;
+	mapping(bytes32 => uint8) public signedCnt;
+	// 0: pending , 1: success ing, 2: success, 3: error ing  4: error
+	mapping(bytes32 => uint8) public status;
+
+	uint8 public threshold;
+
+	address public vault;
+
+	tokenId public tid;
+
+	bytes32 public salt;
+
+	bytes32 public prevId;
+
+
+	message input(bytes32 id, address dest, uint256 value);
+
+ 		
+	constructor(bytes32 _salt,
+        uint8 _threshold) {
+		salt = _salt;
+		uint256 len = 1;
+    require(len > _threshold, "threshold required");
+	}  
+}
+
+
+contract Test5{
+	event TestEvent(uint256 id);
+	constructor() {
+  } 
+
+  function test(uint256 _id) public{
+    emit TestEvent(_id);
+	}
+
+}

@@ -1,0 +1,13 @@
+pragma soliditypp >=0.4.2;
+contract A {  
+}
+contract HelloWorld {
+   event Greeting(uint index, string s);
+   uint index = 0;
+   onMessage SayHello(string calldata s)  {
+      index += 1;
+      emit Greeting(index, s);
+	  index += 1;
+	  emit Greeting(index, s);
+   }
+}
