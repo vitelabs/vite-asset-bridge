@@ -5,8 +5,9 @@ pragma solidity ^0.7.3;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "./Keeper.sol";
+import "./Channel.sol";
 
-contract ChannelERC20 {
+contract ChannelERC20 is IChannel {
     event Input(uint256 index, bytes32 id, bytes dest, uint256 value);
 
     uint256 public inputIndex;
@@ -45,11 +46,15 @@ contract ChannelERC20 {
 
     event Output(uint256 index, bytes32 id, address dest, uint256 value);
 
+    function spent(bytes32 id) public view override returns (bool) {
+        return blockedOutputIds[id];
+    }
+
     function output(
         bytes32 id,
         address payable dest,
         uint256 value
-    ) public payable {
+    ) public override {
         bytes32 nextId = keccak256(
             abi.encodePacked(outputIndex, dest, value, prevOutputId)
         );

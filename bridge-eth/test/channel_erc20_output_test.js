@@ -20,9 +20,11 @@ let keeperMultiSig;
 // Start test block
 describe("Channel Inputs Outputs", function () {
   beforeEach(async function () {
+    const [account1, account2, account3] = await ethers.getSigners();
+    console.log(account1.address);
     erc20 = await deployContract("ERC20Token", []);
     keeper = await deployContract("KeeperNone", []);
-    const [account1, account2, account3] = await ethers.getSigners();
+
     keeperMultiSig = await deployContract("KeeperMultiSig", [
       [account1.address, account2.address, account3.address],
       3,
@@ -66,6 +68,26 @@ describe("Channel Inputs Outputs", function () {
       await initBalance(erc20, channel);
       // await printIdAndIndex(channel);
       await testOutput(channel, account1, id, dest);
+      // await printIdAndIndex(channel);
+      await assertBalanceEquals(erc20, dest);
+    }
+  });
+
+  it("Should output with multi sig keeper version2", async function () {
+    const [account1] = await ethers.getSigners();
+    const dest = "0x09FDAD54B23D937BDB6244341b24566e5F79309b";
+    const id =
+      "0x182bfe56740a85d5ee35abc07143bf0d9f9525c43de7a988c6d03fa79ccba7e6";
+
+    const channel = await deployContract("ChannelERC20", [
+      erc20.address,
+      keeperMultiSig.address,
+    ]);
+
+    {
+      await initBalance(erc20, channel);
+      // await printIdAndIndex(channel);
+      await multiSignIdAndOutput(keeperMultiSig, channel, account1, id, dest);
       // await printIdAndIndex(channel);
       await assertBalanceEquals(erc20, dest);
     }
@@ -130,6 +152,40 @@ async function assertBalanceEquals(_erc20, _dest) {
 }
 
 async function multiSignId(_keeper, _id) {
+  const { rArr, vArr, sArr } = generateSignId(_keeper, _id);
+
+  await expect(_keeper.approveId(vArr, rArr, sArr, _id))
+    .to.emit(_keeper, "Approved")
+    .withArgs(_id);
+}
+
+async function multiSignIdAndOutput(_keeper, _channel, _account, _id, _dest) {
+  const { rArr, vArr, sArr } = generateSignId(_keeper, _id);
+
+  await expect(
+    _keeper.approveAndExecOutput(
+      vArr,
+      rArr,
+      sArr,
+      _id,
+      _dest,
+      ethers.utils.parseEther("1.0"),
+      _channel.address
+    )
+  )
+    .to.emit(_keeper, "Approved")
+    .withArgs(_id)
+    .to.emit(_channel, "Output")
+    .withArgs(
+      1,
+      // ethers.utils.hexlify(keccak256("1")),
+      _id,
+      _dest,
+      ethers.utils.parseEther("1.0")
+    );
+}
+
+function generateSignId(_keeper, _id) {
   const raw = ethers.utils.hexlify(_id);
   const keys = [
     "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
@@ -158,8 +214,9 @@ async function multiSignId(_keeper, _id) {
   const rArr = sigs.map((s) => s.r);
   const vArr = sigs.map((s) => s.v);
   const sArr = sigs.map((s) => s.s);
-
-  await expect(_keeper.approveId(vArr, rArr, sArr, _id))
-    .to.emit(_keeper, "Approved")
-    .withArgs(_id);
+  return {
+    rArr,
+    vArr,
+    sArr,
+  };
 }

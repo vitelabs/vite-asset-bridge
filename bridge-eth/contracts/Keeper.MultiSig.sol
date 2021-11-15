@@ -3,6 +3,7 @@
 pragma solidity ^0.7.3;
 pragma experimental ABIEncoderV2;
 import "./Keeper.sol";
+import "./Channel.sol";
 
 contract KeeperMultiSig is IKeeper {
     uint8 public threshold;
@@ -25,6 +26,10 @@ contract KeeperMultiSig is IKeeper {
         require(approvedIds[id], "revert id approved");
     }
 
+    function isKeeper(address addr) public view returns (bool) {
+        return keepers[addr];
+    }
+
     // Note that address recovered from signatures must be strictly increasing, in order to prevent duplicates
     function approveId(
         uint8[] calldata sigV,
@@ -32,6 +37,15 @@ contract KeeperMultiSig is IKeeper {
         bytes32[] calldata sigS,
         bytes32 id
     ) public {
+        _approveId(sigV, sigR, sigS, id);
+    }
+
+    function _approveId(
+        uint8[] calldata sigV,
+        bytes32[] calldata sigR,
+        bytes32[] calldata sigS,
+        bytes32 id
+    ) internal {
         require(sigR.length == threshold, "threshold required");
         require(
             sigR.length == sigS.length && sigR.length == sigV.length,
@@ -48,5 +62,23 @@ contract KeeperMultiSig is IKeeper {
         }
         approvedIds[id] = true;
         emit Approved(id);
+    }
+
+    function approveAndExecOutput(
+        uint8[] calldata sigV,
+        bytes32[] calldata sigR,
+        bytes32[] calldata sigS,
+        bytes32 id,
+        address payable dest,
+        uint256 value,
+        IChannel channel
+    ) public {
+        _approveId(sigV, sigR, sigS, id);
+        if (!approvedIds[id]) {
+            return;
+        }
+        if (!channel.spent(id)) {
+            channel.output(id, dest, value);
+        }
     }
 }
