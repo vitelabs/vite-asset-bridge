@@ -3,7 +3,6 @@ pragma soliditypp >=0.4.5;
 pragma experimental ABIEncoderV2;
 
 contract Channel {
-
   constructor(tokenId _tid, address[] memory _keepers, uint8 _threshold) payable {
     tid = _tid;
     uint256 len = _keepers.length;
@@ -23,7 +22,7 @@ contract Channel {
 
   uint256 public inputIndex;
   bytes32 public prevInputId;
-  event Input(uint256 index, bytes32 id, bytes dest, uint256 value);
+  event Input(uint256 indexed index, bytes32 id, bytes dest, uint256 value);
 
   onMessage input(
       bytes calldata dest,
@@ -56,15 +55,19 @@ contract Channel {
       address dest,
       uint256 value
   ) {
-	bytes32 nextId = keccak256(abi.encodePacked(outputIndex, dest, value, prevOutputId));
-	require(nextId == id, "id verify failed");
-	require(!blockedOutputIds[nextId], "block verify failed");
+	  _output(id, dest, value);
+  }
+
+  function _output(bytes32 id, address dest, uint256 value) internal {
+    bytes32 nextId = keccak256(abi.encodePacked(outputIndex, dest, value, prevOutputId));
+	  require(nextId == id, "id verify failed");
+	  require(!blockedOutputIds[nextId], "block verify failed");
     approved(nextId);
     blockedOutputIds[nextId] = true;
 
     dest.transfer(tid, value);
     outputIndex = outputIndex+1;
-	prevOutputId = nextId;
+	  prevOutputId = nextId;
     emit Output(outputIndex, id, dest, value);
   }
 
@@ -85,16 +88,31 @@ contract Channel {
   event Approved(bytes32 id);
 
   function approved(bytes32 id) internal view {
-      require(approvedCnt[id]>=threshold, "revert id approved");
+    require(approvedCnt[id]>=threshold, "revert id approved");
   }
 
   onMessage approveOutput(bytes32 id) {
-      require(keepers[msg.sender], "only keeper can approve");
-      require(approvedKeepers[id][msg.sender]==false, "only can approve once");
+    _approveOutput(id);
+  }
 
-      approvedCnt[id] = approvedCnt[id] + uint8(1);
-      approvedKeepers[id][msg.sender] = true;
-      emit Approved(id);
+  onMessage approveAndExecOutput(bytes32 id, address dest, uint256 value) {
+    _approveOutput(id);
+    if(approvedCnt[id]<threshold){
+        return;
+    }
+    if(blockedOutputIds[id]){
+        return;
+    }
+    _output(id, dest, value);
+  }
+
+  function _approveOutput(bytes32 id) internal {
+    require(keepers[msg.sender], "only keeper can approve");
+    require(approvedKeepers[id][msg.sender]==false, "only can approve once");
+
+    approvedCnt[id] = approvedCnt[id] + uint8(1);
+    approvedKeepers[id][msg.sender] = true;
+    emit Approved(id);
   }
   
 
@@ -102,7 +120,7 @@ contract Channel {
   // -----------------------------------------------------------------------------------------------
   // -----------------------------------------------------------------------------------------------
 
-  event InputProved(bytes32 id, bytes32 sigR, bytes32 sigS, uint8 sigV);
+  event InputProved(bytes32 indexed id, bytes32 sigR, bytes32 sigS, uint8 sigV);
 
   mapping(bytes32 => mapping(address => bool)) public inputProvedKeepers;
 
@@ -112,10 +130,10 @@ contract Channel {
       bytes32 sigS,
       bytes32 id
   )  {
-      require(keepers[msg.sender], "only keeper can approve");
-      require(inputProvedKeepers[id][msg.sender]==false, "only can approve once");
+    require(keepers[msg.sender], "only keeper can approve");
+    require(inputProvedKeepers[id][msg.sender]==false, "only can approve once");
 
-      inputProvedKeepers[id][msg.sender] = true;
-      emit InputProved(id, sigR, sigS, sigV);
+    inputProvedKeepers[id][msg.sender] = true;
+    emit InputProved(id, sigR, sigS, sigV);
   }
 }

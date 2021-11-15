@@ -44,12 +44,13 @@ export async function stakeQuota(
   provider: any,
   address: string,
   key: string,
-  beneficiaryAddress: string
+  beneficiaryAddress: string,
+  amount = "5134000000000000000000"
 ) {
   const block = accountBlock.createAccountBlock("stakeForQuota", {
     address: address,
     beneficiaryAddress: beneficiaryAddress,
-    amount: "5134000000000000000000",
+    amount: amount,
   });
   return signAndSend(provider, block, key);
 }
@@ -67,7 +68,7 @@ export async function awaitReceive(
   return signAndSend(provider, block, key);
 }
 
-export async function awaitDeploy(
+export async function awaitDeployConfirmed(
   provider: any,
   address: string,
   key: string,
@@ -110,6 +111,35 @@ export async function awaitDeploy(
     receivedBlock.receiveBlockHash
   );
   return { send: receivedBlock, receive: confirmedBlock };
+}
+
+export async function awaitDeploy(
+  provider: any,
+  address: string,
+  key: string,
+  abi: Object | Array<Object>,
+  code: string,
+  {
+    responseLatency = 0,
+    quotaMultiplier = 10,
+    randomDegree = 0,
+    params,
+  }: {
+    responseLatency?: Number;
+    quotaMultiplier?: Number;
+    randomDegree?: Number;
+    params?: string | Array<string | boolean | Object>;
+  }
+) {
+  const deployResult = await deploy(provider, address, key, abi, code, {
+    responseLatency,
+    quotaMultiplier,
+    randomDegree,
+    params,
+  });
+
+  const receivedBlock = await awaitReceived(provider, deployResult.hash);
+  return { send: receivedBlock };
 }
 
 export class DeployedContract {
@@ -190,9 +220,26 @@ export class DeployedContract {
     });
   }
 }
-
-// send amount to address
 export async function awaitSend(
+  provider: any,
+  fromAddress: string,
+  fromKey: string,
+  toAddress: string,
+  tokenId = "tti_5649544520544f4b454e6e40",
+  amount = "0"
+) {
+  const block = accountBlock.createAccountBlock("send", {
+    address: fromAddress,
+    toAddress: toAddress,
+    tokenId: tokenId,
+    amount: amount,
+  });
+  const sentBlock = await signAndSend(provider, block, fromKey);
+  return sentBlock;
+}
+
+// send amount to contract address
+export async function awaitSendContract(
   provider: any,
   fromAddress: string,
   fromKey: string,
@@ -223,9 +270,9 @@ export async function awaitReceiveAll(
 ) {
   const blocks = await accountUnReceived(provider, account);
   if (blocks) {
-    await blocks.forEach(async (block: any) => {
+    for (const block of blocks) {
       await awaitReceive(provider, account, accountKey, block.hash);
-    });
+    }
   }
 }
 

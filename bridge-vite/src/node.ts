@@ -20,6 +20,10 @@ export function accountHeight(provider: any, to: string) {
     });
 }
 
+export function accountQuota(provider: any, to: string) {
+  return provider.request("contract_getQuotaByAccount", to);
+}
+
 export function accountUnReceived(provider: any, account: string) {
   return provider.request(
     "ledger_getUnreceivedBlocksByAddress",

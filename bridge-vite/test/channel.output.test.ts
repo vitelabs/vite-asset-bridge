@@ -2,9 +2,9 @@ import { describe } from "mocha";
 import { expect } from "chai";
 import {
   deploy as deployContract,
-  awaitDeploy,
+  awaitDeployConfirmed,
   DeployedContract,
-  awaitSend,
+  awaitSendContract,
   awaitInitAccount,
 } from "../src/contract";
 import { compile } from "../src/compile";
@@ -19,7 +19,7 @@ let accounts: any[];
 
 describe("call test", () => {
   before(async function() {
-    const network = cfg.networks.local;
+    const network = cfg.networks[cfg.network as keyof typeof cfg.networks];
 
     const viteWallet = wallet.getWallet(network.mnemonic);
     accounts = viteWallet.deriveAddressList(0, 10);
@@ -46,7 +46,7 @@ describe("call test", () => {
       accounts[2].privateKey
     );
 
-    const { send, receive } = await awaitDeploy(
+    const { send, receive } = await awaitDeployConfirmed(
       provider,
       accounts[0].address,
       accounts[0].privateKey,
@@ -73,7 +73,7 @@ describe("call test", () => {
       result.offChainCodeArr[0]
     );
 
-    await awaitSend(
+    await awaitSendContract(
       provider,
       accounts[0].address,
       accounts[0].privateKey,

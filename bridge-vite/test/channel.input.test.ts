@@ -1,7 +1,7 @@
 import { describe } from "mocha";
 import { expect } from "chai";
 import {
-  awaitDeploy,
+  awaitDeployConfirmed,
   DeployedContract,
   awaitInitAccount,
 } from "../src/contract";
@@ -15,7 +15,7 @@ let provider: any;
 let accounts: any[];
 describe("call test", () => {
   before(async function() {
-    const network = cfg.networks.local;
+    const network = cfg.networks[cfg.network as keyof typeof cfg.networks];
 
     const viteWallet = wallet.getWallet(network.mnemonic);
     accounts = viteWallet.deriveAddressList(0, 10);
@@ -43,7 +43,7 @@ describe("call test", () => {
     );
     await mint(provider);
     await mint(provider);
-    const { send, receive } = await awaitDeploy(
+    const { send, receive } = await awaitDeployConfirmed(
       provider,
       accounts[0].address,
       accounts[0].privateKey,
