@@ -1,0 +1,16 @@
+{
+  "vite": {
+    "address": "vite_b3f54cac6ed30fb203a006c02834aee065dcca95f2a9ab7477",
+    "url": "http://127.0.0.1:48132/",
+    "mnemonic": "turtle siren orchard alpha indoor indicate wasp such waste hurt patient correct true firm goose elegant thunder torch hurt shield taste under basket burger"
+  },
+  "ether": {
+    "channelAddress": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+    "keeperAddress": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+    "endpoint": {
+      "type": "dev",
+      "url": "http://localhost:8545"
+    },
+    "mnemonic": "turtle siren orchard alpha indoor indicate wasp such waste hurt patient correct true firm goose elegant thunder torch hurt shield taste under basket burger"
+  }
+}
