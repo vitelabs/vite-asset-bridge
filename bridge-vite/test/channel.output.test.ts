@@ -7,24 +7,49 @@ import {
   awaitSend,
   awaitInitAccount,
 } from "../src/contract";
-import { awaitReceived, awaitConfirmed } from "../src/node";
-import { accounts } from "../src/accounts";
 import { compile } from "../src/compile";
 import { mint } from "../src/node";
-import { compiler } from "../src/config";
+
+import { wallet } from "@vite/vitejs";
+import cfg from "./vitejs.config.json";
+import { newProvider } from "../src/provider";
+
+let provider: any;
+let accounts: any[];
 
 describe("call test", () => {
+  before(async function() {
+    const network = cfg.networks.local;
+
+    const viteWallet = wallet.getWallet(network.mnemonic);
+    accounts = viteWallet.deriveAddressList(0, 10);
+    provider = newProvider(network.url);
+  });
   // the tests container
   it("checking await call result", async () => {
-    const mintResult = mint();
+    const mintResult = mint(provider);
     const result = await compile("Channel.solpp");
     await mintResult;
 
-    await awaitInitAccount(accounts[0].address, accounts[1].address);
-    await awaitInitAccount(accounts[0].address, accounts[2].address);
+    await awaitInitAccount(
+      provider,
+      accounts[0].address,
+      accounts[0].privateKey,
+      accounts[1].address,
+      accounts[1].privateKey
+    );
+    await awaitInitAccount(
+      provider,
+      accounts[0].address,
+      accounts[0].privateKey,
+      accounts[2].address,
+      accounts[2].privateKey
+    );
 
     const { send, receive } = await awaitDeploy(
+      provider,
       accounts[0].address,
+      accounts[0].privateKey,
       result.abiArr[0],
       result.byteCodeArr[0],
       {
@@ -42,13 +67,16 @@ describe("call test", () => {
     console.log("------", send, receive);
 
     const cc = new DeployedContract(
+      provider,
       receive.address,
       result.abiArr[0],
       result.offChainCodeArr[0]
     );
 
     await awaitSend(
+      provider,
       accounts[0].address,
+      accounts[0].privateKey,
       cc.address,
       "tti_5649544520544f4b454e6e40",
       "2000000000000000000"
@@ -62,13 +90,32 @@ describe("call test", () => {
     {
       const id =
         "0xd98a7f2fd0c4bd24084c9e3b9d94e24d5bde99ddd9c034b259415747076ea03b";
-      await cc.awaitCall(accounts[0].address, "approveOutput", [id], {});
-      await cc.awaitCall(accounts[1].address, "approveOutput", [id], {});
-      await cc.awaitCall(accounts[2].address, "approveOutput", [id], {});
+      await cc.awaitCall(
+        accounts[0].address,
+        accounts[0].privateKey,
+        "approveOutput",
+        [id],
+        {}
+      );
+      await cc.awaitCall(
+        accounts[1].address,
+        accounts[1].privateKey,
+        "approveOutput",
+        [id],
+        {}
+      );
+      await cc.awaitCall(
+        accounts[2].address,
+        accounts[2].privateKey,
+        "approveOutput",
+        [id],
+        {}
+      );
     }
 
     await cc.awaitCall(
       accounts[0].address,
+      accounts[0].privateKey,
       "output",
       [
         "0xd98a7f2fd0c4bd24084c9e3b9d94e24d5bde99ddd9c034b259415747076ea03b",
@@ -85,7 +132,7 @@ describe("call test", () => {
     const prevOutputId = await cc.offChain("prevOutputId", []);
     console.log("prevOutputId", prevOutputId);
 
-    await mint();
+    await mint(provider);
     // console.log(result.offChainCodeArr[0]);
     // console.log(JSON.stringify(result.abiArr[0]));
 

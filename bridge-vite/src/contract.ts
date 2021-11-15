@@ -1,5 +1,5 @@
 import { accountBlock } from "@vite/vitejs";
-import { signAndSend } from "./sender";
+import { signAndSend } from "./provider";
 import {
   awaitConfirmed,
   awaitReceived,
@@ -8,11 +8,12 @@ import {
   accountUnReceived,
 } from "./node";
 import { constant } from "@vite/vitejs";
-import { provider } from "./provider";
 const { Contracts, Vite_TokenId } = constant;
 
 export async function deploy(
+  provider: string,
   address: string,
+  key: string,
   abi: Object | Array<Object>,
   code: string,
   {
@@ -36,28 +37,40 @@ export async function deploy(
     params: params,
     address: address,
   });
-  return signAndSend(block, address);
+  return signAndSend(provider, block, key);
 }
 
-export async function stakeQuota(address: string, beneficiaryAddress: string) {
+export async function stakeQuota(
+  provider: any,
+  address: string,
+  key: string,
+  beneficiaryAddress: string
+) {
   const block = accountBlock.createAccountBlock("stakeForQuota", {
     address: address,
     beneficiaryAddress: beneficiaryAddress,
     amount: "5134000000000000000000",
   });
-  return signAndSend(block, address);
+  return signAndSend(provider, block, key);
 }
 
-export async function awaitReceive(address: string, sendHash: string) {
+export async function awaitReceive(
+  provider: any,
+  address: string,
+  key: string,
+  sendHash: string
+) {
   const block = accountBlock.createAccountBlock("receive", {
     address: address,
     sendBlockHash: sendHash,
   });
-  return signAndSend(block, address);
+  return signAndSend(provider, block, key);
 }
 
 export async function awaitDeploy(
+  provider: any,
   address: string,
+  key: string,
   abi: Object | Array<Object>,
   code: string,
   {
@@ -72,22 +85,30 @@ export async function awaitDeploy(
     params?: string | Array<string | boolean | Object>;
   }
 ) {
-  const deployResult = await deploy(address, abi, code, {
+  const deployResult = await deploy(provider, address, key, abi, code, {
     responseLatency,
     quotaMultiplier,
     randomDegree,
     params,
   });
   {
-    const sentBlock = await stakeQuota(address, deployResult.toAddress);
-    await mint();
-    await awaitReceived(sentBlock.hash);
+    const sentBlock = await stakeQuota(
+      provider,
+      address,
+      key,
+      deployResult.toAddress
+    );
+    await mint(provider);
+    await awaitReceived(provider, sentBlock.hash);
   }
 
-  const receivedBlock = await awaitReceived(deployResult.hash);
+  const receivedBlock = await awaitReceived(provider, deployResult.hash);
 
-  await mint();
-  const confirmedBlock = await awaitConfirmed(receivedBlock.receiveBlockHash);
+  await mint(provider);
+  const confirmedBlock = await awaitConfirmed(
+    provider,
+    receivedBlock.receiveBlockHash
+  );
   return { send: receivedBlock, receive: confirmedBlock };
 }
 
@@ -95,12 +116,15 @@ export class DeployedContract {
   address: string;
   abi: Array<{ name: string; type: string }>;
   offChainCode?: any;
+  provider: any;
 
   constructor(
+    provider: any,
     address: string,
     abi: Array<{ name: string; type: string }>,
     code?: any
   ) {
+    this.provider = provider;
     this.abi = abi;
     this.address = address;
     this.offChainCode = Buffer.from(code, "hex").toString("base64");
@@ -108,6 +132,7 @@ export class DeployedContract {
 
   async awaitCall(
     from: string,
+    fromKey: string,
     methodName: string,
     params: any[],
     {
@@ -115,15 +140,16 @@ export class DeployedContract {
       amount = "0",
     }: { tokenId?: string; amount?: string }
   ) {
-    const block = await this.call(from, methodName, params, {
+    const block = await this.call(from, fromKey, methodName, params, {
       tokenId,
       amount,
     });
-    return await awaitReceived(block.hash);
+    return await awaitReceived(this.provider, block.hash);
   }
 
   async call(
     from: string,
+    fromKey: string,
     methodName: string,
     params: any[],
     {
@@ -145,7 +171,7 @@ export class DeployedContract {
       tokenId: tokenId,
       amount: amount,
     });
-    return signAndSend(block, from);
+    return signAndSend(this.provider, block, fromKey);
   }
 
   async offChain(methodName: string, params: Array<any>) {
@@ -156,7 +182,7 @@ export class DeployedContract {
       throw new Error("method not found:" + methodName);
     }
 
-    return provider.callOffChainContract({
+    return this.provider.callOffChainContract({
       address: this.address,
       abi: methodAbi,
       code: this.offChainCode,
@@ -167,7 +193,9 @@ export class DeployedContract {
 
 // send amount to address
 export async function awaitSend(
+  provider: any,
   fromAddress: string,
+  fromKey: string,
   toAddress: string,
   tokenId = "tti_5649544520544f4b454e6e40",
   amount = "0"
@@ -178,27 +206,40 @@ export async function awaitSend(
     tokenId: tokenId,
     amount: amount,
   });
-  const sentBlock = await signAndSend(block, fromAddress);
-  const receivedBlock = await awaitReceived(sentBlock.hash);
-  await mint();
-  const confirmedBlock = await awaitConfirmed(receivedBlock.receiveBlockHash);
+  const sentBlock = await signAndSend(provider, block, fromKey);
+  const receivedBlock = await awaitReceived(provider, sentBlock.hash);
+  await mint(provider);
+  const confirmedBlock = await awaitConfirmed(
+    provider,
+    receivedBlock.receiveBlockHash
+  );
   return { send: receivedBlock, receive: confirmedBlock };
 }
 
-export async function awaitReceiveAll(account: string) {
-  const blocks = await accountUnReceived(account);
+export async function awaitReceiveAll(
+  provider: any,
+  account: string,
+  accountKey: string
+) {
+  const blocks = await accountUnReceived(provider, account);
   if (blocks) {
     await blocks.forEach(async (block: any) => {
-      await awaitReceive(account, block.hash);
+      await awaitReceive(provider, account, accountKey, block.hash);
     });
   }
 }
 
-export async function awaitInitAccount(from: string, to: string) {
-  if ((await accountHeight(to)) > 0) {
+export async function awaitInitAccount(
+  provider: any,
+  from: string,
+  fromKey: string,
+  to: string,
+  toKey: string
+) {
+  if ((await accountHeight(provider, to)) > 0) {
     return;
   }
-  const stakeResult = stakeQuota(from, to);
+  const stakeResult = stakeQuota(provider, from, fromKey, to);
   await stakeResult;
 
   const tokenId = "tti_5649544520544f4b454e6e40";
@@ -209,8 +250,8 @@ export async function awaitInitAccount(from: string, to: string) {
     tokenId: tokenId,
     amount: amount,
   });
-  const sendResult = signAndSend(block, from);
-  const receivedResult = awaitReceiveAll(to);
+  const sendResult = signAndSend(provider, block, fromKey);
+  const receivedResult = awaitReceiveAll(provider, to, toKey);
   await sendResult;
   await receivedResult;
 }

@@ -1,27 +1,27 @@
-import * as cfg from "./config";
-import { wallet } from "@vite/vitejs";
+// import * as cfg from "./config";
+// import { wallet } from "@vite/vitejs";
 
-const mnemonic = cfg.network.mnemonic;
+// const mnemonic = cfg.network.mnemonic;
 
-// test accounts
-const viteWallet = wallet.getWallet(mnemonic);
+// // test accounts
+// const viteWallet = wallet.getWallet(mnemonic);
 
-const _accounts = viteWallet.deriveAddressList(0, 10);
+// const _accounts = viteWallet.deriveAddressList(0, 10);
 
-// console.log("Default Accounts:");
+// // console.log("Default Accounts:");
 
-_accounts.forEach((account, index) => {
-  console.log(index, account.address, account.privateKey);
-});
+// _accounts.forEach((account, index) => {
+//   console.log(index, account.address, account.privateKey);
+// });
 
-export const accounts = _accounts;
+// export const accounts = _accounts;
 
-export const defaultWallet = viteWallet;
+// export const defaultWallet = viteWallet;
 
-export function selectAccount(address: string): any {
-  return accounts.find((t) => {
-    return t.address.toString() === address;
-  });
-}
+// export function selectAccount(address: string): any {
+//   return accounts.find((t) => {
+//     return t.address.toString() === address;
+//   });
+// }
 
-console.log(__dirname);
+// console.log(__dirname);

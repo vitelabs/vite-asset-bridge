@@ -5,23 +5,48 @@ import {
   DeployedContract,
   awaitInitAccount,
 } from "../src/contract";
-import { accounts } from "../src/accounts";
 import { compile } from "../src/compile";
 import { mint, sleep } from "../src/node";
+import { wallet } from "@vite/vitejs";
+import cfg from "./vitejs.config.json";
+import { newProvider } from "../src/provider";
 
+let provider: any;
+let accounts: any[];
 describe("call test", () => {
+  before(async function() {
+    const network = cfg.networks.local;
+
+    const viteWallet = wallet.getWallet(network.mnemonic);
+    accounts = viteWallet.deriveAddressList(0, 10);
+    provider = newProvider(network.url);
+  });
   // the tests container
   it("checking await call result", async () => {
-    const mintResult = mint();
+    const mintResult = mint(provider);
     const result = await compile("Channel.solpp");
     await mintResult;
 
-    await awaitInitAccount(accounts[0].address, accounts[1].address);
-    await awaitInitAccount(accounts[0].address, accounts[2].address);
-    await mint();
-    await mint();
-    const { send, receive } = await awaitDeploy(
+    await awaitInitAccount(
+      provider,
       accounts[0].address,
+      accounts[0].privateKey,
+      accounts[1].address,
+      accounts[1].privateKey
+    );
+    await awaitInitAccount(
+      provider,
+      accounts[0].address,
+      accounts[0].privateKey,
+      accounts[2].address,
+      accounts[2].privateKey
+    );
+    await mint(provider);
+    await mint(provider);
+    const { send, receive } = await awaitDeploy(
+      provider,
+      accounts[0].address,
+      accounts[0].privateKey,
       result.abiArr[0],
       result.byteCodeArr[0],
       {
@@ -39,6 +64,7 @@ describe("call test", () => {
     console.log("------", send, receive, receive.address);
 
     const cc = new DeployedContract(
+      provider,
       receive.address,
       result.abiArr[0],
       result.offChainCodeArr[0]
@@ -52,6 +78,7 @@ describe("call test", () => {
 
     await cc.awaitCall(
       accounts[0].address,
+      accounts[0].privateKey,
       "input",
       ["0x09FDAD54B23D937BDB6244341b24566e5F79309b", "1000000000000000000"],
       {
@@ -71,6 +98,7 @@ describe("call test", () => {
 
     await cc.awaitCall(
       accounts[0].address,
+      accounts[0].privateKey,
       "proveInputId",
       [
         27,
@@ -82,6 +110,7 @@ describe("call test", () => {
     );
     await cc.awaitCall(
       accounts[1].address,
+      accounts[1].privateKey,
       "proveInputId",
       [
         27,
@@ -93,6 +122,7 @@ describe("call test", () => {
     );
     await cc.awaitCall(
       accounts[2].address,
+      accounts[2].privateKey,
       "proveInputId",
       [
         27,
@@ -103,7 +133,7 @@ describe("call test", () => {
       {}
     );
 
-    await mint();
+    await mint(provider);
   }).timeout(100000);
 });
 

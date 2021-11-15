@@ -1,0 +1,23 @@
+{
+  "networks": {
+    "local": {
+      "url": "http://127.0.0.1:48132/",
+      "mnemonic": "turtle siren orchard alpha indoor indicate wasp such waste hurt patient correct true firm goose elegant thunder torch hurt shield taste under basket burger"
+    }
+  },
+  "network": "local",
+  "compilers": {
+    "solppc": {
+      "name": "solppc",
+      "version": "v0.8.0",
+      "build": "nightly"
+    }
+  },
+  "nodes": {
+    "virtual": {
+      "name": "gvite",
+      "version": "v2.10.4",
+      "build": "nightly"
+    }
+  }
+}
