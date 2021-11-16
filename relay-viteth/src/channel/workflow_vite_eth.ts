@@ -98,7 +98,7 @@ export class WorkflowViteEth {
 
     console.log("ether approve id:", input.event.id);
     console.log("approve input", JSON.stringify(provedEvents));
-    await this.channelEther.approveId(
+    await this.channelEther.approveAndExecOutput(
       "0x" + input.event.id,
       provedEvents
         .slice(0, this.channelEther.etherKeeperThreshold)
@@ -108,7 +108,9 @@ export class WorkflowViteEth {
             s: "0x" + x.event.sigS,
             v: x.event.sigV,
           };
-        })
+        }),
+      "0x" + input.event.dest,
+      input.event.value
     );
 
     await this.channelVite.updateInfo("_submit", {

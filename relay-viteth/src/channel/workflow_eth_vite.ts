@@ -68,18 +68,6 @@ export class WorkflowEthVite {
       return;
     }
 
-    const dest =
-      "0x" +
-      wallet.getOriginalAddressFromAddress(
-        "vite_40996a2ba285ad38930e09a43ee1bd0d84f756f65318e8073a"
-      );
-    console.log(dest);
-    console.log(
-      wallet.getAddressFromOriginalAddress(
-        "40996a2ba285ad38930e09a43ee1bd0d84f756f600"
-      )
-    );
-
     const destAddress = wallet.getAddressFromOriginalAddress(
       input.event.dest.slice(2)
     );

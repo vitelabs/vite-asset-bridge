@@ -1,16 +1,15 @@
 {
   "vite": {
-    "address": "vite_75043ce60463a3c14b188a1505fd359acaef278c16dece5a0b",
-    "url": "https://buidl.vite.net/gvite",
+    "address": "vite_cd468567b92dc3a81bcc2a3468e2fe10396ab455ebb4c31ea3",
+    "url": "http://127.0.0.1:48132/",
     "mnemonic": "turtle siren orchard alpha indoor indicate wasp such waste hurt patient correct true firm goose elegant thunder torch hurt shield taste under basket burger"
   },
   "ether": {
-    "channelAddress": "0x2FE56DB3F21815Ab26828debC175aB08D91CF81D",
-    "keeperAddress": "0x29673303B938528389eE53daf55f6d6de6e0Cf80",
-    "fromBlockHeight": "14159540",
+    "channelAddress": "0xED1E920A487B2c28D2f386690995b582A34C54F2",
+    "keeperAddress": "0xA77Ce08BA7Beae85d172B9A49E2E09E7a229DeE7",
     "endpoint": {
       "type": "dev",
-      "url": "https://data-seed-prebsc-1-s1.binance.org:8545/"
+      "url": "http://localhost:8545"
     },
     "mnemonic": "turtle siren orchard alpha indoor indicate wasp such waste hurt patient correct true firm goose elegant thunder torch hurt shield taste under basket burger"
   }

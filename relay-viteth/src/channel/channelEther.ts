@@ -43,11 +43,14 @@ export class ChannelEther {
   signerKey: string;
   signer: ethers.Wallet;
 
+  fromBlockHeight: string;
+
   constructor(cfg: any) {
     this.etherChannelAbi = _channelAbi;
     this.etherKeeperAbi = _keeperAbi;
     this.infoPath = ETH_INFO_PATH_PREFIX;
-    const path = `m/44'/60'/0'/0/${1}`;
+    this.fromBlockHeight = cfg.fromBlockHeight;
+    const path = `m/44'/60'/0'/0/${0}`;
     this.signerKey = ethers.Wallet.fromMnemonic(cfg.mnemonic, path).privateKey;
     this.etherChannelAddress = cfg.channelAddress;
     this.etherKeeperAddress = cfg.keeperAddress;
@@ -85,6 +88,9 @@ export class ChannelEther {
   }
 
   async scanConfirmedInputs(fromHeight: string) {
+    if (fromHeight === "0") {
+      fromHeight = this.fromBlockHeight;
+    }
     const current = await this.etherProvider.getBlockNumber();
 
     const toHeight = BigInt(current) - ConfirmedThreshold;
@@ -158,6 +164,41 @@ export class ChannelEther {
       .approveId(vArr, rArr, sArr, msg);
   }
 
+  async approveAndExecOutput(
+    msg: string,
+    events: any[],
+    dest: string,
+    value: string
+  ) {
+    let sigs: any[] = [];
+    events.forEach((sig) => {
+      const address = ethers.utils.recoverAddress(msg, sig);
+      sigs.push(Object.assign(sig, { address: address }));
+    });
+
+    sigs.sort(function(a, b) {
+      if (a.address < b.address) return -1;
+      if (a.address > b.address) return 1;
+      return 0;
+    });
+
+    const rArr = sigs.map((s) => s.r);
+    const vArr = sigs.map((s) => s.v);
+    const sArr = sigs.map((s) => s.s);
+
+    await this.etherKeeperContract
+      .connect(this.signer)
+      .approveAndExecOutput(
+        vArr,
+        rArr,
+        sArr,
+        msg,
+        dest,
+        value,
+        this.etherChannelAddress
+      );
+  }
+
   async signId(id: string) {
     const signingKey = new ethers.utils.SigningKey(this.signerKey);
     return signingKey.signDigest(id);
@@ -181,9 +222,5 @@ export class ChannelEther {
 
   async token() {
     return this.etherChannelContract.token();
-  }
-
-  async approveOutput(v: number[], r: string[], s: string[], id: string) {
-    return this.etherKeeperContract.approveId(v, r, s, id);
   }
 }

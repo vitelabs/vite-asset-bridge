@@ -29,8 +29,8 @@ export class Workflow {
 
   async work() {
     await Promise.all([
-      // this.workflowEthVite.step1(),
-      // this.workflowEthVite.step2(),
+      this.workflowEthVite.step1(),
+      this.workflowEthVite.step2(),
       this.workflowViteEth.step1(),
       this.workflowViteEth.step2(),
     ]);

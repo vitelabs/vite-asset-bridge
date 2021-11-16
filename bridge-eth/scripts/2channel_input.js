@@ -20,7 +20,7 @@ async function input() {
   erc20.connect(account1);
 
   const dest = "0x" + vitejs.wallet.getOriginalAddressFromAddress(cfg.to);
-  const value = ethers.utils.parseEther("0.023");
+  const value = cfg.amount;
   const prevHash = await channel.prevInputId();
 
   const id = ethers.utils.solidityKeccak256(
