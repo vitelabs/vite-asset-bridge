@@ -1,19 +1,20 @@
 {
   "tokens": [
     {
-      "token": "VITE",
-      "decimals": 6,
+      "token": "USDT",
       "channels": [
         [
           {
             "network": "ETH",
             "contract": "0x0000000000000000",
-            "erc20": "0x000000"
+            "erc20": "0x000000",
+            "decimals": 6
           },
           {
             "network": "VITE",
             "contract": "vite_xxxxxxxxxxxxxx",
-            "tokenId": "tti_xxxx"
+            "tokenId": "tti_xxxx",
+            "decimals": 6
           }
         ]
       ]
