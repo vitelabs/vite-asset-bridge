@@ -7,11 +7,13 @@
         [
           {
             "network": "ETH",
-            "contract": "0x0000000000000000"
+            "contract": "0x0000000000000000",
+            "erc20": "0x000000"
           },
           {
             "network": "VITE",
-            "contract": "vite_xxxxxxxxxxxxxx"
+            "contract": "vite_xxxxxxxxxxxxxx",
+            "tokenId": "tti_xxxx"
           }
         ]
       ]
