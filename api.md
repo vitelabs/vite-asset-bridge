@@ -16,7 +16,9 @@ return:
 		fromAddress: string,
 		toAddress: string,
 		fromHash: string,
-		toHash: string
+		fromHashConfirmationNums: number, 
+		toHash: string,
+		toHashCOnfirmationNums: number
 	}
 ]
 ```
@@ -36,6 +38,8 @@ return:
 	fromAddress:string,
 	toAddress:string,
 	fromHash:string,
-	toHash:string
+	fromHashConfirmationNums: number, 
+	toHash: string,
+	toHashCOnfirmationNums: number
 }
 ```
