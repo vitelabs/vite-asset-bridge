@@ -18,7 +18,7 @@ return:
 		fromHash: string,
 		fromHashConfirmationNums: number, 
 		toHash: string,
-		toHashCOnfirmationNums: number
+		toHashConfirmationNums: number
 	}
 ]
 ```
@@ -40,6 +40,6 @@ return:
 	fromHash:string,
 	fromHashConfirmationNums: number, 
 	toHash: string,
-	toHashCOnfirmationNums: number
+	toHashConfirmationNums: number
 }
 ```
