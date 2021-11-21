@@ -4,21 +4,27 @@
 
 url: /txs
 method: GET
-params: from=ETH&to=VITE&fromAddress=xxxx&toAddress=xxxx&desc=true
+params: fromAddress=vite_xxxx&fromNet=VITE
 return:
 
 ```
 [
 	{
-		id: string,
-		idx: number,
-		amount: string,
+
+		id:string,
+		idx:number,
+		amount:string,
 		fromAddress:string,
-		toAddress: string,
-		fromHash: string,
+		toAddress:string,
+		token: string,
+		fromNet:string,
+		fromHash:string,
 		fromHashConfirmationNums: number, 
 		toHash: string,
-		toHashConfirmationNums: number
+		toNet:string,
+		toHashConfirmationNums: number,
+		fee:string,
+		time:string
 	}
 ]
 ```
@@ -37,9 +43,14 @@ return:
 	amount:string,
 	fromAddress:string,
 	toAddress:string,
+	token: string,
+	fromNet:string,
 	fromHash:string,
 	fromHashConfirmationNums: number, 
 	toHash: string,
-	toHashConfirmationNums: number
+	toNet:string,
+	toHashConfirmationNums: number,
+	fee:string,
+	time:string
 }
 ```
