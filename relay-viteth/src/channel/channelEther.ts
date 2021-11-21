@@ -93,7 +93,10 @@ export class ChannelEther {
     }
     const current = await this.etherProvider.getBlockNumber();
 
-    const toHeight = BigInt(current) - ConfirmedThreshold;
+    let toHeight = BigInt(current) - ConfirmedThreshold;
+    if (BigInt(toHeight) > BigInt(fromHeight) + 5000n) {
+      toHeight = BigInt(fromHeight) + 5000n;
+    }
 
     // if (toHeight <= BigInt(fromHeight)) {
     //   return [fromHeight, null];

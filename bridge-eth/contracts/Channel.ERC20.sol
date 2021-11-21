@@ -8,7 +8,13 @@ import "./Keeper.sol";
 import "./Channel.sol";
 
 contract ChannelERC20 is IChannel {
-    event Input(uint256 index, bytes32 id, bytes dest, uint256 value);
+    event Input(
+        uint256 index,
+        bytes32 id,
+        bytes dest,
+        uint256 value,
+        address from
+    );
 
     uint256 public inputIndex;
     bytes32 public prevInputId;
@@ -28,7 +34,7 @@ contract ChannelERC20 is IChannel {
         );
 
         inputIndex = inputIndex + 1;
-        emit Input(inputIndex, id, dest, value);
+        emit Input(inputIndex, id, dest, value, msg.sender);
         prevInputId = id;
     }
 

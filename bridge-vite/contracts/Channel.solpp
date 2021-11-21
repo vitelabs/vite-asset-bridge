@@ -22,7 +22,7 @@ contract Channel {
 
   uint256 public inputIndex;
   bytes32 public prevInputId;
-  event Input(uint256 indexed index, bytes32 id, bytes dest, uint256 value);
+  event Input(uint256 indexed index, bytes32 id, bytes dest, uint256 value, address from);
 
   onMessage input(
       bytes calldata dest,
@@ -34,7 +34,7 @@ contract Channel {
     bytes32 id = keccak256(abi.encodePacked(inputIndex, dest, value, prevInputId));
     inputIndex = inputIndex + 1;
 
-    emit Input(inputIndex, id, dest, value);
+    emit Input(inputIndex, id, dest, value, msg.sender);
     prevInputId = id;
   }
 
