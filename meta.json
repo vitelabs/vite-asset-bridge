@@ -12,7 +12,9 @@
             "contract": "0x0000000000000000",
             "erc20": "0x000000",
             "decimals": 6,
-            "confirmedThreshold": 10
+            "confirmedThreshold": 10,
+            "max":"",
+            "min":""
           },
           {
             "network": "VITE",
@@ -21,7 +23,9 @@
             "contract": "vite_xxxxxxxxxxxxxx",
             "tokenId": "tti_xxxx",
             "decimals": 6,
-            "confirmedThreshold": 100
+            "confirmedThreshold": 100,
+            "max":"",
+            "min":""
           }
         ]
       ]
