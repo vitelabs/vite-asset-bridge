@@ -13,10 +13,11 @@ return:
 		id: string,
 		idx: number,
 		amount: string,
-		fromAddress: string,
 		toAddress: string,
 		fromHash: string,
-		toHash: string
+		fromHashConfirmationNums: number, 
+		toHash: string,
+		toHashConfirmationNums: number
 	}
 ]
 ```
@@ -33,9 +34,10 @@ return:
 	id:string,
 	idx:number,
 	amount:string,
-	fromAddress:string,
 	toAddress:string,
 	fromHash:string,
-	toHash:string
+	fromHashConfirmationNums: number, 
+	toHash: string,
+	toHashConfirmationNums: number
 }
 ```
