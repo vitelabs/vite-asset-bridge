@@ -2,10 +2,13 @@
   "tokens": [
     {
       "token": "USDT",
+      "icon": "https://xxxx",
       "channels": [
         [
           {
-            "network": "ETH",
+            "network": "BSC",
+            "desc": "BSC Testnet ",
+            "icon": "https://xxxx",
             "contract": "0x0000000000000000",
             "erc20": "0x000000",
             "decimals": 6,
@@ -13,6 +16,8 @@
           },
           {
             "network": "VITE",
+            "desc": "Vite TestNet",
+            "icon": "https://xxxx",
             "contract": "vite_xxxxxxxxxxxxxx",
             "tokenId": "tti_xxxx",
             "decimals": 6,
