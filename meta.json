@@ -14,7 +14,10 @@
             "decimals": 18,
             "confirmedThreshold": 10,
             "max":"1",
-            "min":"0.01"
+            "min":"0.01",
+            "fee":{
+              "fixed":"0"
+            }
           },
           {
             "network": "VITE",
@@ -25,7 +28,10 @@
             "decimals": 18,
             "confirmedThreshold": 100,
             "max":"1",
-            "min":"0.01"
+            "min":"0.01",
+            "fee":{
+              "fixed":"0"
+            }
           }
         ]
       ]
