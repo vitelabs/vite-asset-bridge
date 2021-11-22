@@ -16,6 +16,10 @@ export class MemoryStorage {
     this.db = [];
     this.existed = new Map<string, boolean>();
   }
+  async exist(event: any, keyFunc: any) {
+    const key = keyFunc(event);
+    return this.existed.get(key);
+  }
   async put(event: any, keyFunc: any) {
     const key = keyFunc(event);
     if (this.existed.get(key)) {

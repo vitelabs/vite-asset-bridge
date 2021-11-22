@@ -61,6 +61,7 @@ describe("scanner eth test", () => {
     const all = await scanner.storage.get((event: any) => {
       return true;
     });
-    console.log(all);
+    console.log(all[0]);
+    // console.log(all);
   }).timeout(10000);
 });

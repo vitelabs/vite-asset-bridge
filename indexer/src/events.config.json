@@ -10,8 +10,8 @@
   },
   "events": [
     {
-      "storage": "vite_inputs",
-      "network": "vite_buidl",
+      "storage": "Input",
+      "network": "VITE",
       "networkType": "vite",
       "eventName": "Input",
       "address": "vite_75043ce60463a3c14b188a1505fd359acaef278c16dece5a0b",
@@ -50,8 +50,8 @@
       ]
     },
     {
-      "storage": "eth_inputs",
-      "network": "bsctest",
+      "storage": "Input",
+      "network": "BSC",
       "networkType": "eth",
       "eventName": "Input",
       "fromBlockHeight": "14159540",
