@@ -2,21 +2,36 @@
   "tokens": [
     {
       "token": "USDT",
+      "icon": "https://static.vite.net/image-1257137467/logo/usdt-logo.png",
       "channels": [
         [
           {
-            "network": "ETH",
-            "contract": "0x0000000000000000",
-            "erc20": "0x000000",
-            "decimals": 6,
-            "confirmedThreshold": 10
+            "network": "BSC",
+            "desc": "BSC TestNet ",
+            "icon": "https://static.vite.net/image-1257137467/logo/bsc-logo.png",
+            "contract": "0x2fe56db3f21815ab26828debc175ab08d91cf81d",
+            "erc20": "0x337610d27c682e347c9cd60bd4b3b107c9d34ddd",
+            "decimals": 18,
+            "confirmedThreshold": 10,
+            "max":"1",
+            "min":"0.01",
+            "fee":{
+              "fixed":"0"
+            }
           },
           {
             "network": "VITE",
-            "contract": "vite_xxxxxxxxxxxxxx",
-            "tokenId": "tti_xxxx",
-            "decimals": 6,
-            "confirmedThreshold": 100
+            "desc": "Vite TestNet",
+            "icon": "https://static.vite.net/image-1257137467/logo/VITE-logo.png",
+            "contract": "vite_75043ce60463a3c14b188a1505fd359acaef278c16dece5a0b",
+            "tokenId": "tti_ece34ebace895e3506a24064",
+            "decimals": 18,
+            "confirmedThreshold": 100,
+            "max":"1",
+            "min":"0.01",
+            "fee":{
+              "fixed":"0"
+            }
           }
         ]
       ]
