@@ -24,7 +24,7 @@ return:
 		toNet:string,
 		toHashConfirmationNums: number,
 		fee:string,
-		time:string
+		time:number
 	}
 ]
 ```
@@ -51,6 +51,6 @@ return:
 	toNet:string,
 	toHashConfirmationNums: number,
 	fee:string,
-	time:string
+	time:number
 }
 ```
