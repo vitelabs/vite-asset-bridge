@@ -1,4 +1,4 @@
-const cfg = require("./config.json");
+const cfg = require("./1deploy.config.json");
 const hre = require("hardhat");
 const ethers = hre.ethers;
 

@@ -22,7 +22,7 @@ describe("Channel Inputs Outputs", function () {
   beforeEach(async function () {
     const [account1, account2, account3] = await ethers.getSigners();
     console.log(account1.address);
-    erc20 = await deployContract("ERC20Token", []);
+    erc20 = await deployContract("ERC20Token", ["TTT","TTTT"]);
     keeper = await deployContract("KeeperNone", []);
 
     keeperMultiSig = await deployContract("KeeperMultiSig", [

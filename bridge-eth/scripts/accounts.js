@@ -2,14 +2,17 @@ const hre = require("hardhat");
 const ethers = hre.ethers;
 
 async function main() {
-  const [account1, account2, account3] = await ethers.getSigners();
+  const accounts = await ethers.getSigners();
+
 
   console.log(
-    `"${account1.address}","${account2.address}","${account3.address}"`
+    `"${accounts[0].address}","${accounts[1].address}","${accounts[2].address}"`
   );
-  console.log(account1.address);
-  console.log(account2.address);
-  console.log(account3.address);
+
+  for (const index in accounts) {
+    console.log(index, accounts[index].address);
+    // console.log(index,account.address);
+  }
 }
 
 main().then(() => {

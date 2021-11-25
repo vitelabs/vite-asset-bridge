@@ -10,18 +10,14 @@ async function deployContract(name, args) {
 }
 
 async function init() {
-  const erc20 = await deployContract("ERC20Token", ["TTT","TTTT"]);
+  const erc20 = await deployContract("ERC20Token", ['VITE', 'VITE']);
+  console.log("erc20 address", erc20.address);
 
   const [account1] = await ethers.getSigners();
 
   erc20.connect(account1);
-  for (const k of cfg.keepers) {
-    await account1.sendTransaction({
-      to: k,
-      value: ethers.utils.parseEther("10.0"),
-    });
-    await erc20.transfer(k, ethers.utils.parseEther("1.0"));
-  }
+ 
+  await erc20.mint(account1.address, ethers.utils.parseEther("1000000.0"));
   console.log("erc20 address", erc20.address);
 }
 
@@ -32,3 +28,5 @@ async function main() {
 main().then(() => {
   console.log("init done");
 });
+// usdt 0x0d090D438bA8F9e2380b0eFe687634361caD402F
+// vite 0x84AEEa373eF0aCd04f94B15Aa36F4475A0ac6457

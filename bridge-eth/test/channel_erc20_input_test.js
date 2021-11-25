@@ -21,7 +21,7 @@ async function deployContract(name, args) {
 // Start test block
 describe("Channel Inputs Outputs", function () {
   beforeEach(async function () {
-    erc20 = await deployContract("ERC20Token", []);
+    erc20 = await deployContract("ERC20Token", ["TTT","TTTT"]);
     keeper = await deployContract("KeeperNone", []);
     channel = await deployContract("ChannelERC20", [
       erc20.address,
