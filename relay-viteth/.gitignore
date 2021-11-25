@@ -1,2 +1,4 @@
 .channel_ether
 .channel_vite
+node_modules/
+lib/

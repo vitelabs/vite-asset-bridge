@@ -7,8 +7,12 @@
     "test": "./node_modules/.bin/mocha -r ts-node/register ",
     "scripts": "./node_modules/.bin/ts-node "
   },
+  "bin": {
+    "vabrelay": "./bin/vite-asset-bridge-relay.js"
+  },
   "author": "shan@vite.org",
   "license": "ISC",
+  "private": true,
   "devDependencies": {
     "@types/chai": "^4.2.21",
     "@types/mocha": "^9.0.0",

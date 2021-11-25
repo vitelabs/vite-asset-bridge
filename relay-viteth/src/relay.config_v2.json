@@ -5,8 +5,8 @@
     "mnemonic": "turtle siren orchard alpha indoor indicate wasp such waste hurt patient correct true firm goose elegant thunder torch hurt shield taste under basket burger"
   },
   "ether": {
-    "channelAddress": "0x2FE56DB3F21815Ab26828debC175aB08D91CF81D",
-    "keeperAddress": "0x29673303B938528389eE53daf55f6d6de6e0Cf80",
+    "channelAddress": "0x127B7278fD42cEa062C80b1256C168f698098B70",
+    "keeperAddress": "0x073fcA1Ac6C38DF18E117C11224B4a3Aab73C270",
     "fromBlockHeight": "14159540",
     "endpoint": {
       "type": "dev",

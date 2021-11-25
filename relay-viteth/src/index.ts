@@ -1,8 +1,18 @@
+import fs from "fs";
 import { Workflow } from "./channel/index";
-import { channels } from "./config";
+
+const jsonCfg = process.env.JSON_RELAY_CONFIG;
 
 async function run() {
-  const workflow = new Workflow(channels());
+  if (!jsonCfg) {
+    throw new Error("JSON_RELAY_CONFIG environment variable not set");
+  }
+  if (!fs.existsSync(jsonCfg)) {
+    throw new Error("config file not found, " + jsonCfg);
+  }
+
+  const cfg = JSON.parse(fs.readFileSync(jsonCfg).toString());
+  const workflow = new Workflow(cfg);
 
   await workflow.init();
 
