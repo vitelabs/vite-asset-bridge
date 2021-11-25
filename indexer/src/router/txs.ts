@@ -1,7 +1,8 @@
+import { Indexer } from "..";
 import { MemoryStorage } from "../db.event";
 import { EventsDB } from "../events";
 
-export async function txs(db: EventsDB, ctx: any) {
+export async function txs(db: EventsDB, indexer: any, ctx: any) {
   const address = ctx.query.fromAddress;
   const net = ctx.query.fromNet;
 
@@ -15,14 +16,27 @@ export async function txs(db: EventsDB, ctx: any) {
   };
 }
 
-export async function tx(db: EventsDB, ctx: any) {
+export async function tx(db: EventsDB, indexer: any, ctx: any) {
   const txId = ctx.query.id;
 
   const txs = await getTxsFromDBById(db.db("Input"), txId);
-  const results = await wrapTxsWithOutput(db.db("Output"), txs);
+  const results = await wrapTxsWithOutput(db.db("Output"), indexer, txs);
   ctx.body = {
     code: 0,
     data: firstOne(results),
+  };
+}
+
+export async function all(db: EventsDB, indexer: any, ctx: any) {
+  const txs = await db.db("Input").get((e: any) => {
+    return true;
+  });
+
+  const results = await wrapTxsWithOutput(db.db("Output"), indexer, txs);
+
+  ctx.body = {
+    code: 0,
+    data: results,
   };
 }
 
@@ -67,24 +81,24 @@ async function getTxsFromDBById(db: MemoryStorage, id: string) {
   return results;
 }
 
-async function wrapTxsWithOutput(db: MemoryStorage, txs: any[]) {
+async function wrapTxsWithOutput(db: MemoryStorage, indexer: any, txs: any[]) {
   const ids = new Set(
     txs.map((m) => {
       return m.args.id;
     })
   );
   const outputs = await db.get((m: any) => {
-    return ids.has(m.args.id);
+    return ids.has("0x" + m.args.id);
   });
   // id->output
   const outputsMap: Map<string, any> = new Map();
   for (const output of outputs) {
-    outputsMap.set(output.args.id, output);
+    outputsMap.set("0x" + output.args.id, output);
   }
 
   return txs.map((tx) => {
     let result: { [k: string]: string } = {};
-    const tokenInfo: any = getTokenByContractAddress(tx.address);
+    const tokenInfo: any = getTokenByContractAddress(indexer, tx.address);
     result.id = tx.args.id;
 
     const output = outputsMap.get(tx.args.id);
@@ -115,4 +129,7 @@ async function wrapTxsWithOutput(db: MemoryStorage, txs: any[]) {
   });
 }
 
-function getTokenByContractAddress(address: string) {}
+function getTokenByContractAddress(indexer:Indexer, address: string) {
+  return indexer.contractTokenMapping.get(address)
+  // return { token: "USDT" };
+}

@@ -1,9 +1,9 @@
 {
   "networks": {
-    "vite_buidl": {
+    "VITE": {
       "url": "https://buidl.vite.net/gvite"
     },
-    "bsctest": {
+    "BSC": {
       "type": "rpc",
       "url": "https://data-seed-prebsc-1-s1.binance.org:8545/"
     }
@@ -13,82 +13,20 @@
       "storage": "Input",
       "network": "VITE",
       "networkType": "vite",
-      "eventName": "Input",
+      "eventNames": ["Input", "Output"],
+      "token": "USDV",
       "address": "vite_75043ce60463a3c14b188a1505fd359acaef278c16dece5a0b",
-      "abi": [
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "uint256",
-              "name": "index",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "bytes32",
-              "name": "id",
-              "type": "bytes32"
-            },
-            {
-              "indexed": false,
-              "internalType": "bytes",
-              "name": "dest",
-              "type": "bytes"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "value",
-              "type": "uint256"
-            }
-          ],
-          "name": "Input",
-          "type": "event"
-        }
-      ]
+      "abiRef": "vite_channel"
     },
     {
       "storage": "Input",
       "network": "BSC",
       "networkType": "eth",
-      "eventName": "Input",
+      "eventNames": ["Input", "Output"],
       "fromBlockHeight": "14159540",
+      "token": "USDV",
       "address": "0x2FE56DB3F21815Ab26828debC175aB08D91CF81D",
-      "abi": [
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "index",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "bytes32",
-              "name": "id",
-              "type": "bytes32"
-            },
-            {
-              "indexed": false,
-              "internalType": "bytes",
-              "name": "dest",
-              "type": "bytes"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "value",
-              "type": "uint256"
-            }
-          ],
-          "name": "Input",
-          "type": "event"
-        }
-      ]
+      "abiRef": "eth_channel"
     }
   ]
 }

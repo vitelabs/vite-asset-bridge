@@ -27,7 +27,7 @@ export class ScannerEth {
     this.filter = this.contract.filters[
       this.eventName as keyof typeof this.contract.filters
     ];
-    console.log(typeof this.filter);
+    // console.log(typeof this.filter);
   }
 
   async init() {}

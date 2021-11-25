@@ -120,7 +120,7 @@ export class ScannerVite {
       return { toHeight: fromHeight, events: [] };
     }
 
-    console.log(events);
+    // console.log(events);
     return events.map((input: any) => {
       const event: any = this.decodeEvent(input.vmlog, this.abi, eventName);
       return {
@@ -266,7 +266,7 @@ export function mapViteEvent(
   const result: Event = {
     network: network,
     networkType: networkType,
-    blockNumber: receiveBlock.firstSnapshotHash,
+    blockNumber: +receiveBlock.firstSnapshotHeight,
     blockHash: receiveBlock.firstSnapshotHash,
     transactionIndex: event.height,
     transactionHash: event.hash,

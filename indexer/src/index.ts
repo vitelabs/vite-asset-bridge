@@ -20,32 +20,55 @@ import { hideBin } from "yargs/helpers";
 import fs from "fs";
 import { EventsDB, scanWith } from "./events";
 import { startWebAppWith } from "./server";
+import { mergeConfig } from "./config";
 
 yargs(hideBin(process.argv))
   .command(
-    "index <config>",
+    "index <config> <abis>",
     "the contents of the URL",
     () => {},
     async (argv: any) => {
-      await runWith(argv.config);
+      await runWith(argv.config, argv.abis);
     }
   )
   .demandCommand(1)
   .parse();
 
-async function runWith(cfgPath: string) {
-  if (!fs.existsSync(cfgPath)) {
-    throw new Error(`config file is not exists. path:${cfgPath}`);
+async function runWith(cfgPath: string, abisCfg: string) {
+  const cfg = json(cfgPath);
+  const abis = json(abisCfg);
+
+  const mergedCfg = mergeConfig(cfg, abis);
+  const db = new EventsDB();
+
+  scanWith(db, mergedCfg);
+
+  startWebAppWith(db, mergedCfg, new Indexer(mergedCfg));
+}
+
+function json(filename: string) {
+  if (!fs.existsSync(filename)) {
+    throw new Error(`config file is not exists. path:${filename}`);
   }
-  const json = fs.readFileSync(cfgPath);
+  const json = fs.readFileSync(filename);
   let cfg;
   try {
     cfg = JSON.parse(json.toString());
   } catch (e) {
     throw new Error(`parse config fail, content:${json}`);
   }
-  const db = new EventsDB();
-  scanWith(db, cfg);
+  return cfg;
+}
 
-  startWebAppWith(db);
+export class Indexer {
+  cfg: any;
+  contractTokenMapping: Map<string, string>;
+
+  constructor(cfg: any) {
+    this.cfg = cfg;
+    this.contractTokenMapping = new Map<string, string>();
+    for (const event of cfg.events) {
+      this.contractTokenMapping.set(event.address, event.token);
+    }
+  }
 }
