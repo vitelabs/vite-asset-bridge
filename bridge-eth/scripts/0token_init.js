@@ -10,14 +10,14 @@ async function deployContract(name, args) {
 }
 
 async function init() {
-  const erc20 = await deployContract("ERC20Token", ['VITE', 'VITE']);
+  const erc20 = await deployContract("ERC20Token", ['USDV', 'USDV']);
   console.log("erc20 address", erc20.address);
 
   const [account1] = await ethers.getSigners();
 
   erc20.connect(account1);
  
-  await erc20.mint(account1.address, ethers.utils.parseEther("1000000.0"));
+  await erc20.mint(account1.address, ethers.utils.parseEther("10000000.0"));
   console.log("erc20 address", erc20.address);
 }
 

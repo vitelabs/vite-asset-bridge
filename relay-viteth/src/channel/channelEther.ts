@@ -2,7 +2,7 @@
 // ---------
 import * as utils from "../utils/utils";
 import { ethers } from "ethers";
-import { newEtherProvider } from "./common";
+import { newEtherProvider, privateKey } from "./common";
 import _channelAbi from "./channel.ether.abi.json";
 import _keeperAbi from "./keeper.ether.abi.json";
 
@@ -50,8 +50,7 @@ export class ChannelEther {
     this.etherKeeperAbi = _keeperAbi;
     this.infoPath = ETH_INFO_PATH_PREFIX;
     this.fromBlockHeight = cfg.fromBlockHeight;
-    const path = `m/44'/60'/0'/0/${0}`;
-    this.signerKey = ethers.Wallet.fromMnemonic(cfg.mnemonic, path).privateKey;
+    this.signerKey = privateKey(cfg.account);
     this.etherChannelAddress = cfg.channelAddress;
     this.etherKeeperAddress = cfg.keeperAddress;
 

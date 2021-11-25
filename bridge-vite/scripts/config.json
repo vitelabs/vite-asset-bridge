@@ -1,12 +1,12 @@
 {
   "url": "https://buidl.vite.net/gvite",
   "keepers": [
-    "vite_295811cf039ac8e47c554788406ac33420295e85ebe298648b",
-    "vite_9931920c08bae456c4473c81c80d62dd3e6f903b53727b3cf9",
-    "vite_a1fd0c7876b7611d203c0c7b0fe8618e3b826df011a44c2a8d"
+    "vite_cecce91eb5ed40879105e1c780c572d087bb6ec91db043f422",
+    "vite_0afd645ca4b97441cae39c51e0b29355cbccbf43440457be7b",
+    "vite_10930bed5611218376df608b976743fa3127b5f008e8f27f83"
   ],
   "threshold": 3,
-  "tokenId": "tti_5649544520544f4b454e6e40",
+  "tokenId": "tti_2ff7518e3ee12eb611f895fb",
   "channel": "vite_85e7082a6f9a9f4731e39caa6ceabe36c79cf36e70a085e572",
 
   "from": "vite_cecce91eb5ed40879105e1c780c572d087bb6ec91db043f422",

@@ -38,8 +38,8 @@ export class ChannelVite {
       console.log("vite provider connected");
     });
     this.viteChannelAddress = cfg.address;
-    const viteWallet = wallet.getWallet(cfg.mnemonic);
-    const viteSigner = viteWallet.deriveAddressList(0, 1)[0];
+    const viteWallet = wallet.getWallet(cfg.account.mnemonic);
+    const viteSigner = viteWallet.deriveAddress(cfg.account.index)
     this.signerAddress = viteSigner.address;
     this.signerPrivateKey = viteSigner.privateKey;
   }
