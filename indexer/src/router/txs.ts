@@ -8,7 +8,7 @@ export async function txs(db: EventsDB, indexer: any, ctx: any) {
 
   const txs = await getTxsFromDB(db.db("Input"), address, net);
 
-  const results = await wrapTxsWithOutput(db.db("Output"), txs);
+  const results = await wrapTxsWithOutput(db.db("Output"), indexer, txs);
 
   ctx.body = {
     code: 0,

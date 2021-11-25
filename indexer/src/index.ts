@@ -22,6 +22,21 @@ import { EventsDB, scanWith } from "./events";
 import { startWebAppWith } from "./server";
 import { mergeConfig } from "./config";
 
+
+export class Indexer {
+  cfg: any;
+  contractTokenMapping: Map<string, string>;
+
+  constructor(cfg: any) {
+    this.cfg = cfg;
+    this.contractTokenMapping = new Map<string, string>();
+    for (const event of cfg.events) {
+      this.contractTokenMapping.set(event.address, event.token);
+    }
+  }
+}
+
+
 yargs(hideBin(process.argv))
   .command(
     "index <config> <abis>",
@@ -58,17 +73,4 @@ function json(filename: string) {
     throw new Error(`parse config fail, content:${json}`);
   }
   return cfg;
-}
-
-export class Indexer {
-  cfg: any;
-  contractTokenMapping: Map<string, string>;
-
-  constructor(cfg: any) {
-    this.cfg = cfg;
-    this.contractTokenMapping = new Map<string, string>();
-    for (const event of cfg.events) {
-      this.contractTokenMapping.set(event.address, event.token);
-    }
-  }
 }
