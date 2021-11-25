@@ -1,7 +1,7 @@
 {
   "tokens": [
     {
-      "token": "USDT",
+      "token": "USDV",
       "icon": "https://static.vite.net/image-1257137467/logo/usdt-logo.png",
       "channels": [
         [
@@ -9,8 +9,8 @@
             "network": "BSC",
             "desc": "BSC TestNet ",
             "icon": "https://static.vite.net/image-1257137467/logo/bsc-logo.png",
-            "contract": "0x2fe56db3f21815ab26828debc175ab08d91cf81d",
-            "erc20": "0x337610d27c682e347c9cd60bd4b3b107c9d34ddd",
+            "contract": "0xE419E504417Fb7a5659D6DAC57509dA0680E4A90",
+            "erc20": "0xA86f10a4742270466ea9A62C95AdfA1273DF1FaA",
             "decimals": 18,
             "confirmedThreshold": 10,
             "max":"1",
@@ -23,8 +23,44 @@
             "network": "VITE",
             "desc": "Vite TestNet",
             "icon": "https://static.vite.net/image-1257137467/logo/VITE-logo.png",
-            "contract": "vite_75043ce60463a3c14b188a1505fd359acaef278c16dece5a0b",
-            "tokenId": "tti_ece34ebace895e3506a24064",
+            "contract": "vite_5a4850cc41ef3495f2e1d7ef14d95df16eea5f879ea7bc7f49",
+            "tokenId": "tti_2ff7518e3ee12eb611f895fb",
+            "decimals": 18,
+            "confirmedThreshold": 100,
+            "max":"1",
+            "min":"0.01",
+            "fee":{
+              "fixed":"0"
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "token": "VITE",
+      "icon": "https://static.vite.net/image-1257137467/logo/usdt-logo.png",
+      "channels": [
+        [
+          {
+            "network": "BSC",
+            "desc": "BSC TestNet ",
+            "icon": "https://static.vite.net/image-1257137467/logo/bsc-logo.png",
+            "contract": "0xe191D728ea4950D234287c5056930327EFa8a045",
+            "erc20": "0x84AEEa373eF0aCd04f94B15Aa36F4475A0ac6457",
+            "decimals": 18,
+            "confirmedThreshold": 10,
+            "max":"1",
+            "min":"0.01",
+            "fee":{
+              "fixed":"0"
+            }
+          },
+          {
+            "network": "VITE",
+            "desc": "Vite TestNet",
+            "icon": "https://static.vite.net/image-1257137467/logo/VITE-logo.png",
+            "contract": "vite_b38e0d7d51b4abdcfd4e93c761eb85767c1c0884ef5cba952a",
+            "tokenId": "tti_5649544520544f4b454e6e40",
             "decimals": 18,
             "confirmedThreshold": 100,
             "max":"1",
