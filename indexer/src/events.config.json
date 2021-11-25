@@ -13,19 +13,77 @@
       "storage": "Input",
       "network": "VITE",
       "networkType": "vite",
-      "eventNames": ["Input", "Output"],
+      "eventNames": ["Input"],
       "token": "USDV",
-      "address": "vite_75043ce60463a3c14b188a1505fd359acaef278c16dece5a0b",
+      "address": "vite_5a4850cc41ef3495f2e1d7ef14d95df16eea5f879ea7bc7f49",
+      "abiRef": "vite_channel"
+    },
+    {
+      "storage": "Output",
+      "network": "VITE",
+      "networkType": "vite",
+      "eventNames": ["Output"],
+      "token": "USDV",
+      "address": "vite_5a4850cc41ef3495f2e1d7ef14d95df16eea5f879ea7bc7f49",
       "abiRef": "vite_channel"
     },
     {
       "storage": "Input",
       "network": "BSC",
       "networkType": "eth",
-      "eventNames": ["Input", "Output"],
+      "eventNames": ["Input"],
       "fromBlockHeight": "14159540",
       "token": "USDV",
-      "address": "0x2FE56DB3F21815Ab26828debC175aB08D91CF81D",
+      "address": "0xE419E504417Fb7a5659D6DAC57509dA0680E4A90",
+      "abiRef": "eth_channel"
+    },
+    {
+      "storage": "Output",
+      "network": "BSC",
+      "networkType": "eth",
+      "eventNames": ["Output"],
+      "fromBlockHeight": "14159540",
+      "token": "USDV",
+      "address": "0xE419E504417Fb7a5659D6DAC57509dA0680E4A90",
+      "abiRef": "eth_channel"
+    },
+    
+    {
+      "storage": "Input",
+      "network": "VITE",
+      "networkType": "vite",
+      "eventNames": ["Input"],
+      "token": "USDV",
+      "address": "vite_b38e0d7d51b4abdcfd4e93c761eb85767c1c0884ef5cba952a",
+      "abiRef": "vite_channel"
+    },
+    {
+      "storage": "Output",
+      "network": "VITE",
+      "networkType": "vite",
+      "eventNames": ["Output"],
+      "token": "USDV",
+      "address": "vite_b38e0d7d51b4abdcfd4e93c761eb85767c1c0884ef5cba952a",
+      "abiRef": "vite_channel"
+    },
+    {
+      "storage": "Input",
+      "network": "BSC",
+      "networkType": "eth",
+      "eventNames": ["Input"],
+      "fromBlockHeight": "14159540",
+      "token": "USDV",
+      "address": "0xe191D728ea4950D234287c5056930327EFa8a045",
+      "abiRef": "eth_channel"
+    },
+    {
+      "storage": "Output",
+      "network": "BSC",
+      "networkType": "eth",
+      "eventNames": ["Output"],
+      "fromBlockHeight": "14159540",
+      "token": "USDV",
+      "address": "0xe191D728ea4950D234287c5056930327EFa8a045",
       "abiRef": "eth_channel"
     }
   ]
