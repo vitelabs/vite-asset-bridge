@@ -58,7 +58,9 @@
           "name": "value",
           "type": "uint256"
         }
-      ]
+      ],
+      "name": "Output",
+      "type": "event"
     }
   ],
   "eth_channel": [

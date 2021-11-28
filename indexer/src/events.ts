@@ -14,7 +14,20 @@ export async function scanWith(eventsDB: EventsDB, cfg: any) {
     await scanner.start();
     scanners.push(scanner);
   }
-  await loop(scanners);
+  while (true) {
+    try{
+      await loop(scanners);
+    }catch (err) {
+      console.error(err);
+    }
+    await sleep(10000);
+  }
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 async function loop(scanners: Scanner[]) {

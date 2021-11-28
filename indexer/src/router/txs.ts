@@ -88,12 +88,12 @@ async function wrapTxsWithOutput(db: MemoryStorage, indexer: any, txs: any[]) {
     })
   );
   const outputs = await db.get((m: any) => {
-    return ids.has("0x" + m.args.id);
+    return ids.has(m.args.id);
   });
   // id->output
   const outputsMap: Map<string, any> = new Map();
   for (const output of outputs) {
-    outputsMap.set("0x" + output.args.id, output);
+    outputsMap.set(output.args.id, output);
   }
 
   return txs.map((tx) => {

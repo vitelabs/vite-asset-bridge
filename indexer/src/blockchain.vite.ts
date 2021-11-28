@@ -16,6 +16,7 @@ export class ScannerVite {
   eventName: string;
 
   filter: any;
+  argsType: any;
 
   storage: MemoryStorage;
 
@@ -31,6 +32,7 @@ export class ScannerVite {
     });
 
     this.lastHeight = 0;
+    this.argsType = parseType(this.eventName, this.abi);
   }
 
   async init() {}
@@ -81,7 +83,8 @@ export class ScannerVite {
           this.network,
           this.networkType,
           event,
-          block
+          block,
+          this.argsType
         );
         this.storage.put(result, this.key);
       }
@@ -261,31 +264,46 @@ export function mapViteEvent(
   network: string,
   networkType: string,
   event: any,
-  receiveBlock: any
+  receiveBlock: any,
+  argsType: any
 ) {
   const result: Event = {
     network: network,
     networkType: networkType,
     blockNumber: +receiveBlock.firstSnapshotHeight,
-    blockHash: receiveBlock.firstSnapshotHash,
+    blockHash: "0x"+receiveBlock.firstSnapshotHash,
     transactionIndex: event.height,
-    transactionHash: event.hash,
+    transactionHash: "0x"+event.hash,
     logIndex: 0,
     event: event.event.name,
     address: event.address,
-    args: mapViteArgs(event.event),
+    args: mapViteArgs(event.event, argsType),
     time: receiveBlock.timestamp,
   };
   return result;
 }
 
-function mapViteArgs(args: any) {
+function mapViteArgs(args: any, argsType: any) {
   let results: { [k: string]: string } = {};
   for (const key of Object.keys(args)) {
     if (!isNaN(Number(key))) {
       continue;
     }
-    results[key] = args[key as keyof typeof args].toString();
+    if (argsType[key] === "bytes" || argsType[key] === "bytes32") {
+      results[key] = "0x" + args[key as keyof typeof args].toString();
+    } else {
+      results[key] = args[key as keyof typeof args].toString();
+    }
   }
   return results;
+}
+
+function parseType(eventName: string, abi: any[]) {
+  const abiItem = abi.find((item) => item.name === eventName);
+  let result: { [k: string]: string } = {};
+
+  for (const item of abiItem.inputs) {
+    result[item.name] = item.type;
+  }
+  return result;
 }
