@@ -17,7 +17,11 @@ async function run() {
   await workflow.init();
 
   while (true) {
-    await workflow.work();
+    try{
+      await workflow.work();
+    }catch (err) {
+      console.error(err);
+    }
     await sleep(10000);
   }
 }
