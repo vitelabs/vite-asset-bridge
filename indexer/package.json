@@ -7,6 +7,9 @@
     "test": "./node_modules/.bin/mocha -r ts-node/register ",
     "scripts": "./node_modules/.bin/ts-node "
   },
+  "bin": {
+    "vabindexer": "./bin/vite-asset-bridge-indexer.js"
+  },
   "author": "shan@vite.org",
   "license": "ISC",
   "devDependencies": {
