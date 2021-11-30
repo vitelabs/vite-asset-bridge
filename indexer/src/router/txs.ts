@@ -11,11 +11,9 @@ export async function txs(
 ) {
   const address = ctx.query.fromAddress;
   const net = ctx.query.fromNet;
-  console.log("request", address, net);
 
   const txs = await getTxsFromDB(db.db("Input"), address, net);
 
-  console.log("txs",txs);
   const results = await wrapTxsWithOutput(db.db("Output"), indexer, txs, heights);
 
   ctx.body = {
@@ -58,8 +56,6 @@ function firstOne(results: any[]) {
 async function getTxsFromDB(db: MemoryStorage, address: string, net: string) {
   const results = await db.getSorted(
     (event: any) => {
-      console.log(address, net, event.args.from, event.network);
-      console.log(event.args.from === address && event.network === net);
       return event.args.from === address && event.network === net;
     },
     (a: any, b: any) => {
