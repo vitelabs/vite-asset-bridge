@@ -15,7 +15,7 @@ export async function scanWith(eventsDB: EventsDB, cfg: any, heights:Heights){
     await scanner.init();
     await scanner.start();
     scanners.push(scanner);
-    heights.add(event.network, scanner);
+    heights.add(event.network, scanner.height);
   }
   heights.loop();
   while (true) {
