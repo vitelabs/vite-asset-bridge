@@ -1,5 +1,6 @@
 import Koa, { Middleware } from "koa";
 import Router from "koa-router";
+import cors from "koa-cors";
 import { EventsDB } from "./events";
 import { Heights } from "./heights";
 import { all, tx, txs } from "./router/txs";
@@ -44,7 +45,7 @@ export function startWebAppWith(db: EventsDB, cfg:any, indexer:any, heights:Heig
   router.get("/inputs", inputsController);
   router.get("/outputs", outputsController);
 
-  app.use(router.routes()).use(router.allowedMethods());
+  app.use(router.routes()).use(router.allowedMethods()).use(cors());
   app.listen(PORT, () => {
     console.log(`server is running on port ${PORT}`);
   });
