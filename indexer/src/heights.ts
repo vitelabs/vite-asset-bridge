@@ -21,13 +21,13 @@ export class Heights {
     while (true) {
       for (const fn of this.funs) {
         try {
-          const height = fn[1]();
+          const height = await fn[1]();
           this.heights.set(fn[0], height);
         } catch (err) {
           console.error(err);
         }
       }
-      sleep(10000);
+      await sleep(10000);
     }
   }
 }

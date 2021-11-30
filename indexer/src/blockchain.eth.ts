@@ -65,27 +65,33 @@ export class ScannerEth {
       }, ${from}->${to},${typeof from}, ${typeof to} start`
     );
     const events = await this.contract.queryFilter(this.filter(), +from, +to);
-    if (events.length > 0) {
-      for (const event of events) {
-        if (await this.storage.exist(event, this.key)) {
-          continue;
+    if (events) {
+      if (events.length > 0) {
+        for (const event of events) {
+          if (await this.storage.exist(event, this.key)) {
+            continue;
+          }
+          const block = await this.provider.getBlock(event.blockHash);
+          const result = mapEthEvent(
+            this.network,
+            this.networkType,
+            event,
+            block
+          );
+          this.storage.put(result, this.key);
+          // console.log("++++++++++", JSON.stringify(event));
+          // console.log(event);
+          // console.log(typeof event.args);
         }
-        const block = await this.provider.getBlock(event.blockHash);
-        const result = mapEthEvent(
-          this.network,
-          this.networkType,
-          event,
-          block
-        );
-        this.storage.put(result, this.key);
-        // console.log("++++++++++", JSON.stringify(event));
-        // console.log(event);
-        // console.log(typeof event.args);
       }
+      console.log(
+        `[${this.network}] pull ${this.address} ${this.eventName}, ${from}->${to}, total:${events.length}`
+      );
+    } else {
+      console.log(
+        `[${this.network}] pull ${this.address} ${this.eventName}, ${from}->${to}, error events`
+      );
     }
-    console.log(
-      `[${this.network}] pull ${this.address} ${this.eventName}, ${from}->${to}, total:${events.length}`
-    );
   }
 
   async subscribe() {
