@@ -103,6 +103,11 @@ export class ScannerEth {
   key = (event: any) => {
     return `${this.networkType}_${this.network}_${event.blockNumber}_${event.transactionIndex}_${event.logIndex}`;
   };
+
+  height = async () => {
+    const blockNumber = await this.provider.getBlockNumber();
+    return blockNumber;
+  };
 }
 
 function newEtherProvider(cfg: any): Provider {

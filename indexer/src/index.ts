@@ -21,6 +21,7 @@ import fs from "fs";
 import { EventsDB, scanWith } from "./events";
 import { startWebAppWith } from "./server";
 import { mergeConfig } from "./config";
+import { Heights } from "./heights";
 
 
 export class Indexer {
@@ -56,9 +57,9 @@ async function runWith(cfgPath: string, abisCfg: string) {
   const mergedCfg = mergeConfig(cfg, abis);
   const db = new EventsDB();
 
-  scanWith(db, mergedCfg);
-
-  startWebAppWith(db, mergedCfg, new Indexer(mergedCfg));
+  const heights = new Heights();
+  scanWith(db, mergedCfg, heights);
+  startWebAppWith(db, mergedCfg, new Indexer(mergedCfg), heights);
 }
 
 function json(filename: string) {

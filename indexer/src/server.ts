@@ -1,9 +1,10 @@
 import Koa, { Middleware } from "koa";
 import Router from "koa-router";
 import { EventsDB } from "./events";
+import { Heights } from "./heights";
 import { all, tx, txs } from "./router/txs";
 
-export function startWebAppWith(db: EventsDB, cfg:any, indexer:any) {
+export function startWebAppWith(db: EventsDB, cfg:any, indexer:any, heights:Heights) {
   const PORT = 8000;
   const app = new Koa();
 
@@ -16,13 +17,13 @@ export function startWebAppWith(db: EventsDB, cfg:any, indexer:any) {
   
 
   const txsController: Middleware = async (ctx) => {
-    await txs(db, indexer,ctx);
+    await txs(db, indexer,ctx, heights);
   };
   const txController: Middleware = async (ctx) => {
-    await tx(db, indexer,ctx);
+    await tx(db, indexer,ctx, heights);
   };
   const allTxsController: Middleware = async (ctx) => {
-    await all(db, indexer,ctx);
+    await all(db, indexer,ctx, heights);
   };
 
   const inputsController: Middleware = async (ctx) => {

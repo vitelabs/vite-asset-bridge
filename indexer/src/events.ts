@@ -1,10 +1,12 @@
 import { Scanner, newScanner } from "./blockchain";
 import { MemoryStorage } from "./db.event";
+import { Heights } from "./heights";
 
-export async function scanWith(eventsDB: EventsDB, cfg: any) {
+export async function scanWith(eventsDB: EventsDB, cfg: any, heights:Heights){
   const events = cfg.events;
   const networks = cfg.networks;
 
+  
   let scanners: Scanner[] = [];
   for (let event of events) {
     console.log(event);
@@ -13,11 +15,13 @@ export async function scanWith(eventsDB: EventsDB, cfg: any) {
     await scanner.init();
     await scanner.start();
     scanners.push(scanner);
+    heights.add(event.network, scanner);
   }
+  heights.loop();
   while (true) {
-    try{
+    try {
       await loop(scanners);
-    }catch (err) {
+    } catch (err) {
       console.error(err);
     }
     await sleep(10000);

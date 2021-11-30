@@ -45,6 +45,11 @@ export class ScannerVite {
     return `${this.networkType}_${this.network}_${event.blockNumber}_${event.transactionIndex}_${event.logIndex}`;
   };
 
+  height = async ():Promise<number> => {
+    const height = await this.provider.request("ledger_getSnapshotChainHeight" ); 
+    return +height;
+  }
+
   getStorage() {
     return this.storage;
   }
@@ -63,6 +68,8 @@ export class ScannerVite {
       this.lastHeight = 0;
     }
   }
+
+
 
   async pullFromTo(from: number, to: number) {
     const events = await this.scanEvents(

@@ -1,14 +1,20 @@
 import { Indexer } from "..";
 import { MemoryStorage } from "../db.event";
 import { EventsDB } from "../events";
+import { Heights } from "../heights";
 
-export async function txs(db: EventsDB, indexer: any, ctx: any) {
+export async function txs(
+  db: EventsDB,
+  indexer: any,
+  ctx: any,
+  heights: Heights
+) {
   const address = ctx.query.fromAddress;
   const net = ctx.query.fromNet;
 
   const txs = await getTxsFromDB(db.db("Input"), address, net);
 
-  const results = await wrapTxsWithOutput(db.db("Output"), indexer, txs);
+  const results = await wrapTxsWithOutput(db.db("Output"), indexer, txs, heights);
 
   ctx.body = {
     code: 0,
@@ -16,23 +22,23 @@ export async function txs(db: EventsDB, indexer: any, ctx: any) {
   };
 }
 
-export async function tx(db: EventsDB, indexer: any, ctx: any) {
+export async function tx(db: EventsDB, indexer: any, ctx: any, heights:Heights) {
   const txId = ctx.query.id;
 
   const txs = await getTxsFromDBById(db.db("Input"), txId);
-  const results = await wrapTxsWithOutput(db.db("Output"), indexer, txs);
+  const results = await wrapTxsWithOutput(db.db("Output"), indexer, txs, heights);
   ctx.body = {
     code: 0,
     data: firstOne(results),
   };
 }
 
-export async function all(db: EventsDB, indexer: any, ctx: any) {
+export async function all(db: EventsDB, indexer: any, ctx: any, heights:Heights) {
   const txs = await db.db("Input").get((e: any) => {
     return true;
   });
 
-  const results = await wrapTxsWithOutput(db.db("Output"), indexer, txs);
+  const results = await wrapTxsWithOutput(db.db("Output"), indexer, txs, heights);
 
   ctx.body = {
     code: 0,
@@ -81,7 +87,7 @@ async function getTxsFromDBById(db: MemoryStorage, id: string) {
   return results;
 }
 
-async function wrapTxsWithOutput(db: MemoryStorage, indexer: any, txs: any[]) {
+async function wrapTxsWithOutput(db: MemoryStorage, indexer: any, txs: any[], heights:Heights) {
   const ids = new Set(
     txs.map((m) => {
       return m.args.id;
@@ -107,9 +113,10 @@ async function wrapTxsWithOutput(db: MemoryStorage, indexer: any, txs: any[]) {
           toNet: output.network,
           toHash: output.transactionHash,
           toHashConfirmedHeight: output.blockNumber,
+          toHashConfirmationNums: wrapConfirmedNum(output.blockNumber, heights.getHeight(output.network)),
         }
       : {};
-
+    
     return Object.assign(
       {
         id: tx.args.id,
@@ -121,6 +128,7 @@ async function wrapTxsWithOutput(db: MemoryStorage, indexer: any, txs: any[]) {
         fromNet: tx.network,
         fromHash: tx.transactionHash,
         fromHashConfirmedHeight: tx.blockNumber,
+        fromHashConfirmationNums: wrapConfirmedNum(tx.blockNumber, heights.getHeight(tx.network)),
         fee: "0",
         time: tx.time,
       },
@@ -129,7 +137,15 @@ async function wrapTxsWithOutput(db: MemoryStorage, indexer: any, txs: any[]) {
   });
 }
 
-function getTokenByContractAddress(indexer:Indexer, address: string) {
-  return indexer.contractTokenMapping.get(address)
+function wrapConfirmedNum(confirmedHeight:number,currentHeight:number){
+  if(currentHeight>confirmedHeight){
+    return currentHeight - confirmedHeight;
+  }else{
+    return 0;
+  }
+}
+
+function getTokenByContractAddress(indexer: Indexer, address: string) {
+  return indexer.contractTokenMapping.get(address);
   // return { token: "USDT" };
 }

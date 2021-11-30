@@ -5,6 +5,7 @@ export interface Scanner {
   init(): any;
   start(): any;
   pull(): any;
+  height(): Promise<number>
   pullFromTo(from: number, to: number): any;
   getStorage(): any;
 }
