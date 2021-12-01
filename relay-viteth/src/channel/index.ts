@@ -10,9 +10,9 @@ export class Workflow {
   channelVite: ChannelVite;
   channelEther: ChannelEther;
 
-  constructor(cfg: any) {
-    this.channelVite = new ChannelVite(cfg.vite);
-    this.channelEther = new ChannelEther(cfg.ether);
+  constructor(cfg: any, dataDir:string) {
+    this.channelVite = new ChannelVite(cfg.vite, dataDir);
+    this.channelEther = new ChannelEther(cfg.ether, dataDir);
 
     this.workflowViteEth = new WorkflowViteEth(
       this.channelVite,

@@ -25,7 +25,7 @@ interface Input {
 
 const ConfirmedThreshold = 0n;
 
-const ETH_INFO_PATH_PREFIX = "./.channel_ether/info";
+const ETH_INFO_PATH_PREFIX = ".channel_ether/info";
 
 export class ChannelEther {
   infoPath: string;
@@ -45,10 +45,14 @@ export class ChannelEther {
 
   fromBlockHeight: string;
 
-  constructor(cfg: any) {
+  constructor(cfg: any, dataDir: string) {
     this.etherChannelAbi = _channelAbi;
     this.etherKeeperAbi = _keeperAbi;
-    this.infoPath = ETH_INFO_PATH_PREFIX;
+    if (dataDir) {
+      this.infoPath = dataDir + "/" + ETH_INFO_PATH_PREFIX;
+    } else {
+      this.infoPath = ETH_INFO_PATH_PREFIX;
+    }
     this.fromBlockHeight = cfg.fromBlockHeight;
     this.signerKey = privateKey(cfg.account);
     this.etherChannelAddress = cfg.channelAddress;

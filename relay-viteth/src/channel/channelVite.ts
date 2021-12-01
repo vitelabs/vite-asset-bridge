@@ -14,7 +14,7 @@ interface ConfirmedInfo {
   index: string;
 }
 
-const VITE_INFO_PATH_PREFIX = "./.channel_vite/info";
+const VITE_INFO_PATH_PREFIX = ".channel_vite/info";
 
 const ConfirmedThreshold = 1;
 
@@ -30,16 +30,20 @@ export class ChannelVite {
   signerAddress: string;
   signerPrivateKey: string;
 
-  constructor(cfg: any) {
+  constructor(cfg: any, dataDir: string) {
     this.viteChannelAbi = _viteAbi;
     this.viteOffChainCode = Buffer.from(offChainCode, "hex").toString("base64");
-    this.infoPath = VITE_INFO_PATH_PREFIX;
+    if (dataDir) {
+      this.infoPath = dataDir + "/" + VITE_INFO_PATH_PREFIX;
+    } else {
+      this.infoPath = VITE_INFO_PATH_PREFIX;
+    }
     this.viteProvider = new ViteAPI(new HTTP_RPC(cfg.url), () => {
       console.log("vite provider connected");
     });
     this.viteChannelAddress = cfg.address;
     const viteWallet = wallet.getWallet(cfg.account.mnemonic);
-    const viteSigner = viteWallet.deriveAddress(cfg.account.index)
+    const viteSigner = viteWallet.deriveAddress(cfg.account.index);
     this.signerAddress = viteSigner.address;
     this.signerPrivateKey = viteSigner.privateKey;
   }
