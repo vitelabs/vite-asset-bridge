@@ -2,7 +2,7 @@ import fs from "fs";
 import { Workflow } from "./channel/index";
 
 const jsonCfg = process.env.JSON_RELAY_CONFIG;
-const dataDir = process.env.DATA_DIR;
+const dataDir = process.env.DATA_DIR || '';
 
 async function run() {
   if (!jsonCfg) {
