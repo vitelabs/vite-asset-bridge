@@ -86,8 +86,8 @@ export class WorkflowEthVite {
       await this.channelEther.updateInfo("_confirmed", {
         height: String(input.height),
         index: input.index.toString(),
-        txIndex: -1,
-        logIndex: -1,
+        txIndex: input.txIndex,
+        logIndex: input.logIndex,
       });
       return;
     }
