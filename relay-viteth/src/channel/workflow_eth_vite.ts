@@ -73,8 +73,8 @@ export class WorkflowEthVite {
     );
     console.log(destAddress);
     const outputIdx = await this.channelVite.outputIndex();
-    if (!outputIdx || (BigInt(outputIdx) + 1n).toString() != info.index) {
-      console.warn("output index error", outputIdx, info.index);
+    if(!outputIdx || (BigInt(outputIdx)+1n).toString() != input.index ) {
+      console.warn("output index error", outputIdx, input.index);
       return;
     }
     await this.channelVite.approveAndExecOutput(
@@ -89,7 +89,7 @@ export class WorkflowEthVite {
       txIndex: input.txIndex,
       logIndex: input.logIndex,
     });
-  }
+  
 
   async step2() {}
 }
