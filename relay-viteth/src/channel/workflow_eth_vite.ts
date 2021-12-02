@@ -72,6 +72,11 @@ export class WorkflowEthVite {
       input.event.dest.slice(2)
     );
     console.log(destAddress);
+    const outputIdx = await this.channelVite.outputIndex();
+    if (!outputIdx || (BigInt(outputIdx) + 1n).toString() != info.index) {
+      console.warn("output index error", outputIdx, info.index);
+      return;
+    }
     await this.channelVite.approveAndExecOutput(
       input.id,
       destAddress,
