@@ -13,8 +13,8 @@
             "erc20": "0xA86f10a4742270466ea9A62C95AdfA1273DF1FaA",
             "decimals": 18,
             "confirmedThreshold": 10,
-            "max":"1",
-            "min":"0.01",
+            "max":"5",
+            "min":"0.1",
             "fee":{
               "fixed":"0"
             }
@@ -27,8 +27,8 @@
             "tokenId": "tti_2ff7518e3ee12eb611f895fb",
             "decimals": 18,
             "confirmedThreshold": 100,
-            "max":"1",
-            "min":"0.01",
+            "max":"5",
+            "min":"0.1",
             "fee":{
               "fixed":"0"
             }
@@ -49,8 +49,8 @@
             "erc20": "0x84AEEa373eF0aCd04f94B15Aa36F4475A0ac6457",
             "decimals": 18,
             "confirmedThreshold": 10,
-            "max":"1",
-            "min":"0.01",
+            "max":"10",
+            "min":"0.1",
             "fee":{
               "fixed":"0"
             }
@@ -63,8 +63,8 @@
             "tokenId": "tti_5649544520544f4b454e6e40",
             "decimals": 18,
             "confirmedThreshold": 100,
-            "max":"1",
-            "min":"0.01",
+            "max":"10",
+            "min":"0.1",
             "fee":{
               "fixed":"0"
             }
