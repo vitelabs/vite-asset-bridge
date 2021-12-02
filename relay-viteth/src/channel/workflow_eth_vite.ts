@@ -89,7 +89,7 @@ export class WorkflowEthVite {
       txIndex: input.txIndex,
       logIndex: input.logIndex,
     });
-  
+  } 
 
   async step2() {}
 }
