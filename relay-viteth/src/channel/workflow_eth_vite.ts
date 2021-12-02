@@ -72,15 +72,20 @@ export class WorkflowEthVite {
       input.event.dest.slice(2)
     );
     console.log(destAddress);
-    const outputIdx = await this.channelVite.outputIndex();
+    const result = await this.channelVite.outputIndex();
+    if(!result || result.length === 0) {
+      return;
+    }
+    const outputIdx = result[0];
     if(!outputIdx ){
       console.warn("undefined outputIdx");
+      return;
     }
     if(BigInt(outputIdx)+1n > BigInt(input.index) ) {
       console.warn("output index skip", outputIdx, input.index.toString());
       await this.channelEther.updateInfo("_confirmed", {
         height: String(input.height),
-        index: info.index.toString(),
+        index: input.index.toString(),
         txIndex: -1,
         logIndex: -1,
       });
