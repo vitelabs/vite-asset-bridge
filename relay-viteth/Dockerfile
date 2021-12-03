@@ -1,11 +1,17 @@
-FROM node:14
+FROM node:14-alpine
 
 
 WORKDIR /app
 
-COPY . ./relay
+COPY package*.json ./
 
-RUN cd relay && npm install && ./node_modules/.bin/tsc -p . && npm link
+RUN npm install
+
+COPY . .
+
+RUN ./node_modules/.bin/tsc -p . || echo "tsc -p ."
+
+RUN npm link
 
 ENTRYPOINT ["vabrelay"] 
 
