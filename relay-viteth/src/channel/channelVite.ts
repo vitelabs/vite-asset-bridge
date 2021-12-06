@@ -292,6 +292,16 @@ export class ChannelVite {
       [id, address]
     );
   }
+  async inputProvedKeepers(id: string, address: string) {
+    return readContract(
+      this.viteProvider,
+      this.viteChannelAddress,
+      this.viteChannelAbi,
+      this.viteOffChainCode,
+      "inputProvedKeepers",
+      [id, address]
+    );
+  }
 }
 
 async function writeContract(

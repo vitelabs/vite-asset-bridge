@@ -48,7 +48,15 @@ export class WorkflowViteEth {
 
     const sig = await this.channelEther.signId("0x" + input.event.id);
 
-    await this.channelVite.proveInputId(sig.v, sig.r, sig.s, input.event.id);
+    const proved = await this.channelVite.inputProvedKeepers(
+      input.event.id,
+      this.channelVite.signerAddress
+    );
+    if (proved && proved[0]) {
+      console.log(`input proved [${input.event.index}] [${input.event.id}]`);
+    } else {
+      await this.channelVite.proveInputId(sig.v, sig.r, sig.s, input.event.id);
+    }
 
     await this.channelVite.updateInfo("_confirmed", {
       height: input.height,
