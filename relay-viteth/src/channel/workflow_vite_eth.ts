@@ -52,8 +52,8 @@ export class WorkflowViteEth {
       input.event.id,
       this.channelVite.signerAddress
     );
-    if (proved && proved[0]) {
-      console.log(`input proved [${input.event.index}] [${input.event.id}]`);
+    if (proved && proved[0] === '1') {
+      console.log(`input proved [${input.event.index}] [${input.event.id}]`, proved);
     } else {
       await this.channelVite.proveInputId(sig.v, sig.r, sig.s, input.event.id);
     }
