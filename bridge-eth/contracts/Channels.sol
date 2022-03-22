@@ -63,10 +63,10 @@ contract Vault is IVault {
         returns (uint256)
     {
         bytes32 _inputHash = keccak256(
-            abi.encodePacked(uint256(0), channels.length, _erc20)
+            abi.encodePacked(uint256(0), block.number, channels.length, _erc20)
         );
         bytes32 _outputHash = keccak256(
-            abi.encodePacked(uint256(1), channels.length, _erc20)
+            abi.encodePacked(uint256(1), block.number, channels.length, _erc20)
         );
 
         return newChannelWithHash(_erc20, _keeper, _inputHash, _outputHash);
