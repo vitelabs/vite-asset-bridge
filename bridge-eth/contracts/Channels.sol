@@ -12,7 +12,7 @@ interface IVault {
         uint256 id,
         bytes calldata dest,
         uint256 value
-    ) external;
+    ) external payable;
 
     function output(
         uint256 id,
@@ -49,6 +49,10 @@ contract Vault is IVault {
     );
     event Output(uint256 id, bytes32 _hash, address dest, uint256 value);
 
+    constructor(IKeeper _keeper) {
+        newChannel(IERC20(0x00), _keeper);
+    }
+
     function spent(bytes32 _hash) public view override returns (bool) {
         return spentHashes[_hash];
     }
@@ -84,8 +88,9 @@ contract Vault is IVault {
                 keeper: _keeper
             })
         );
-        require(!spentHashes[_outputHash], "spent verify failed");
-        spentHashes[_outputHash] = true;
+        requireAndUpdateSpentHashes(_inputHash);
+        requireAndUpdateSpentHashes(_outputHash);
+
         emit LogChannelsAddition(channels.length - 1, _erc20);
         return channels.length;
     }
@@ -94,19 +99,25 @@ contract Vault is IVault {
         uint256 id,
         bytes calldata dest,
         uint256 value
-    ) public override {
+    ) public payable override {
         Channel memory channel = channels[id];
 
-        SafeERC20.safeTransferFrom(
-            channel.erc20,
-            msg.sender,
-            address(this),
-            value
-        );
+        if (id == 0) {
+            require(msg.value == value, "Transfer Require failed.");
+        } else {
+            SafeERC20.safeTransferFrom(
+                channel.erc20,
+                msg.sender,
+                address(this),
+                value
+            );
+        }
 
         bytes32 nextHash = keccak256(
             abi.encodePacked(channel.inputId, dest, value, channel.inputHash)
         );
+
+        requireAndUpdateSpentHashes(nextHash);
 
         emit Input(channel.inputId + 1, nextHash, dest, value, msg.sender);
         channels[id].inputId = channel.inputId + 1;
@@ -129,14 +140,22 @@ contract Vault is IVault {
 
         channel.keeper.approved(outputHash);
 
-        require(!spentHashes[nextHash], "spent verify failed");
-        spentHashes[nextHash] = true;
+        requireAndUpdateSpentHashes(nextHash);
 
-        SafeERC20.safeTransfer(channel.erc20, dest, value);
+        if (id == 0) {
+            dest.transfer(value);
+        } else {
+            SafeERC20.safeTransfer(channel.erc20, dest, value);
+        }
 
         emit Output(channel.outputId + 1, nextHash, dest, value);
         channels[id].outputId = channel.outputId + 1;
         channels[id].outputHash = nextHash;
+    }
+
+    function requireAndUpdateSpentHashes(bytes32 _hash) internal {
+        require(!spentHashes[_hash], "spent hash verify failed");
+        spentHashes[_hash] = true;
     }
 
     receive() external payable {}

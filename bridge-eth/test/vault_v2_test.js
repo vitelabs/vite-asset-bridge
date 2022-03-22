@@ -20,17 +20,18 @@ async function deployContract(name, args) {
 // Start test block
 describe("Vault Inputs Outputs", function () {
   beforeEach(async function () {
-    erc20 = await deployContract("ERC20Token", ["TTT","TTTT"]);
-    vault = await deployContract("Vault", []);
     keeper = await deployContract("KeeperNone", []);
-
-    await expect(vault.newChannel(erc20.address, keeper.address, {}))
-    .to.emit(vault, "LogChannelsAddition")
-    .withArgs(0, erc20.address);
+    erc20 = await deployContract("ERC20Token", ["TTT","TTTT"]);
+    vault = await deployContract("Vault", [keeper.address]);
+    
 
     await expect(vault.newChannel(erc20.address, keeper.address, {}))
     .to.emit(vault, "LogChannelsAddition")
     .withArgs(1, erc20.address);
+
+    await expect(vault.newChannel(erc20.address, keeper.address, {}))
+    .to.emit(vault, "LogChannelsAddition")
+    .withArgs(2, erc20.address);
   });
 
   it("Should transfer", async function () {
@@ -54,7 +55,7 @@ describe("Vault Inputs Outputs", function () {
 
     const dest = "0x40996a2ba285ad38930e09a43ee1bd0d84f756f600";
     const value = ethers.utils.parseEther("1.0");
-    const channel = await vault.channels(0);
+    const channel = await vault.channels(1);
     const prevHash = channel.inputHash;
 
     const id = ethers.utils.solidityKeccak256(
@@ -67,7 +68,7 @@ describe("Vault Inputs Outputs", function () {
 
     await erc20.mint(account1.address, value);
     await erc20.approve(vault.address, value);
-    await expect(vault.input(0, dest, value))
+    await expect(vault.input(1, dest, value))
       .to.emit(vault, "Input")
       .withArgs(1, id, ethers.utils.hexlify(dest), value, account1.address);
 
@@ -82,7 +83,7 @@ describe("Vault Inputs Outputs", function () {
     const dest = "0x09FDAD54B23D937BDB6244341b24566e5F79309b";
 
     const value = ethers.utils.parseEther("1.0");
-    const channel = await vault.channels(0);
+    const channel = await vault.channels(1);
     const prevHash = channel.outputHash;
 
     const id = ethers.utils.solidityKeccak256(
@@ -109,7 +110,7 @@ async function testOutput(_vault, _account, _id, _dest) {
   await expect(
     _vault
       .connect(_account)
-      .output(0, _id, _dest, ethers.utils.parseEther("1.0"))
+      .output(1, _id, _dest, ethers.utils.parseEther("1.0"))
   )
     .to.emit(_vault, "Output")
     .withArgs(
