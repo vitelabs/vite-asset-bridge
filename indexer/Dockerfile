@@ -13,5 +13,5 @@ RUN ./node_modules/.bin/tsc -p . || echo "tsc -p ."
 
 RUN npm link
 
-ENTRYPOINT ["vabrelay"] 
+ENTRYPOINT ["vabindexer"] 
 
