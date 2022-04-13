@@ -44,7 +44,7 @@
           {
             "network": "ETH",
             "desc": "ETH Rinkeby",
-            "icon": "https://static.vite.net/image-1257137467/logo/bsc-logo.png",
+            "icon": "https://static.vite.net/image-1257137467/logo/ETH-logo.png",
             "contract": "0x848aB97D30fC2E3f4cc9d8F37Aff68A5A716a352",
             "erc20": "0xDC0B2bd7cA7deFfbf1a713F87059C9a139c5bB1D",
             "decimals": 18,
