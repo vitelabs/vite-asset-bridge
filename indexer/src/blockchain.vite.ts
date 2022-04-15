@@ -45,10 +45,10 @@ export class ScannerVite {
     return `${this.networkType}_${this.network}_${event.blockNumber}_${event.transactionIndex}_${event.logIndex}`;
   };
 
-  height = async ():Promise<number> => {
-    const height = await this.provider.request("ledger_getSnapshotChainHeight" ); 
+  height = async (): Promise<number> => {
+    const height = await this.provider.request("ledger_getSnapshotChainHeight");
     return +height;
-  }
+  };
 
   getStorage() {
     return this.storage;
@@ -69,8 +69,6 @@ export class ScannerVite {
     }
   }
 
-
-
   async pullFromTo(from: number, to: number) {
     const events = await this.scanEvents(
       String(from),
@@ -86,7 +84,7 @@ export class ScannerVite {
           "ledger_getAccountBlockByHash",
           event.hash
         );
-        if(+block.firstSnapshotHeight<=0){
+        if (+block.firstSnapshotHeight <= 0) {
           throw new Error(`vite ${event.hash} block not confirmed`);
         }
         const result = mapViteEvent(
@@ -158,7 +156,8 @@ export class ScannerVite {
         from = to;
       } catch (e) {
         console.error(
-          `[${this.network}] subscribe ${this.address} ${this.eventName}, ${from}->${to} fail`,e
+          `[${this.network}] subscribe ${this.address} ${this.eventName}, ${from}-> fail`,
+          e
         );
       }
       await sleep(2000);
@@ -287,9 +286,9 @@ export function mapViteEvent(
     network: network,
     networkType: networkType,
     blockNumber: +receiveBlock.firstSnapshotHeight,
-    blockHash: "0x"+receiveBlock.firstSnapshotHash,
+    blockHash: "0x" + receiveBlock.firstSnapshotHash,
     transactionIndex: event.height,
-    transactionHash: "0x"+event.hash,
+    transactionHash: "0x" + event.hash,
     logIndex: 0,
     event: event.event.name,
     address: event.address,
