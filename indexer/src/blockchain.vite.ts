@@ -86,6 +86,9 @@ export class ScannerVite {
           "ledger_getAccountBlockByHash",
           event.hash
         );
+        if(+block.firstSnapshotHeight<=0){
+          throw new Error(`vite ${event.hash} block not confirmed`);
+        }
         const result = mapViteEvent(
           this.network,
           this.networkType,
@@ -145,14 +148,20 @@ export class ScannerVite {
   async subscribe() {
     let from = await accountHeight(this.provider, this.address);
     while (true) {
-      let to = await accountHeight(this.provider, this.address);
-      if (to <= from) {
-        await sleep(1000);
-        continue;
+      try {
+        let to = await accountHeight(this.provider, this.address);
+        if (to <= from) {
+          await sleep(3000);
+          continue;
+        }
+        await this.pullFromTo(from, to);
+        from = to;
+      } catch (e) {
+        console.error(
+          `[${this.network}] subscribe ${this.address} ${this.eventName}, ${from}->${to} fail`,e
+        );
       }
-      await this.pullFromTo(from, to);
-      from = to;
-      await sleep(1000);
+      await sleep(2000);
     }
   }
 

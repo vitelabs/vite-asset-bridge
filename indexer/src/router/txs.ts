@@ -174,7 +174,7 @@ async function wrapTxsWithOutput(
 }
 
 function wrapConfirmedNum(confirmedHeight: number, currentHeight: number) {
-  if (currentHeight > confirmedHeight) {
+  if (currentHeight > confirmedHeight && confirmedHeight > 0) {
     return currentHeight - confirmedHeight;
   } else {
     return 0;
