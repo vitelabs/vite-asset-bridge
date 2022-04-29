@@ -21,13 +21,18 @@ contract Vault is IVault {
 
     event LogChannelsAddition(uint256 indexed id, IERC20 indexed token);
     event Input(
-        uint256 id,
-        bytes32 _hash,
+        uint256 index,
+        bytes32 inputHash,
         bytes dest,
         uint256 value,
         address from
     );
-    event Output(uint256 id, bytes32 _hash, address dest, uint256 value);
+    event Output(
+        uint256 index,
+        bytes32 outputHash,
+        address dest,
+        uint256 value
+    );
 
     constructor(IKeeper _keeper) {
         newChannel(IERC20(0x00), _keeper);
