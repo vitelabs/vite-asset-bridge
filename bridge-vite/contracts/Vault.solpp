@@ -53,13 +53,13 @@ contract Vault is IVault {
     event LogChannelsAddition(uint256 indexed id, vitetoken indexed token);
     event KeepersAddition(uint256 indexed id);
     event Input(
-        uint256 id,
-        bytes32 _hash,
+        uint256 index,
+        bytes32 inputHash,
         bytes dest,
         uint256 value,
         address from
     );
-    event Output(uint256 id, bytes32 _hash, address dest, uint256 value);
+    event Output(uint256 index, bytes32 outputHash, address dest, uint256 value);
 
     constructor() {
     }
@@ -221,4 +221,24 @@ contract Vault is IVault {
         emit Approved(outputHash);
     }
 
+
+
+    // ------------------------
+
+    event InputProved(uint256 indexed channelId, bytes32 indexed inputHash,  bytes32 sigR, bytes32 sigS, uint8 sigV);
+
+    mapping(bytes32 => mapping(address => bool)) public inputProvedKeepers;
+
+    function proveInputHash(
+        uint8 sigV,
+        bytes32 sigR,
+        bytes32 sigS,
+        bytes32 inputHash,
+        uint256 channelId
+    ) public {
+        require(inputProvedKeepers[inputHash][msg.sender]==false, "only can approve once");
+
+        inputProvedKeepers[inputHash][msg.sender] = true;
+        emit InputProved(channelId, inputHash, sigR, sigS, sigV);
+    }
 }
