@@ -41,7 +41,7 @@ describe("test Vault", () => {
   });
   beforeEach(async () => {
     // compile
-    const compiledContracts = await vuilder.compile("Channels.solpp");
+    const compiledContracts = await vuilder.compile("Vault.solpp");
     expect(compiledContracts).to.have.property("Vault");
 
     // deploy
@@ -54,162 +54,162 @@ describe("test Vault", () => {
     await deployer.sendToken(vault.address, "100000000000000000000", tokenId);
   });
 
-  // it("test vault new channel", async () => {
-  //   const block = await vault.call(
-  //     "newChannel",
-  //     [tokenId, addressArr, threshold],
-  //     { amount: "0" }
-  //   );
-  //   expect(await vault.query("numChannels", [])).to.be.deep.equal(["1"]);
-  //   expect(await vault.query("infoKeepers", [0])).to.be.deep.equal([
-  //     threshold,
-  //     addressArr,
-  //   ]);
-  //   expect(await vault.query("channels", [0])).to.be.deep.equal([
-  //     "0",
-  //     "3b1b8e33d2323635e8e2d2af169091f6702995e2514a4484201d0e33d4267a9d",
-  //     "0",
-  //     "f52c591730dfe81ac45343fe807fa31d619ece6c8d8cb062ccd6174c34908d4d",
-  //     "tti_5649544520544f4b454e6e40",
-  //     "0",
-  //   ]);
-  //   {
-  //     // expect KeepersAddition event
-  //     const events = await vault.getPastEvents("KeepersAddition", {
-  //       fromHeight: block.height,
-  //       toHeight: block.height,
-  //     });
-  //     expect(events.map((event: any) => event.returnValues)).to.be.deep.equal([
-  //       {
-  //         "0": "0",
-  //         id: "0",
-  //       },
-  //     ]);
-  //   }
-  //   {
-  //     // expect LogChannelsAddition event
-  //     const events = await vault.getPastEvents("LogChannelsAddition", {
-  //       fromHeight: block.height,
-  //       toHeight: block.height,
-  //     });
-  //     expect(events.map((event: any) => event.returnValues)).to.be.deep.equal([
-  //       {
-  //         "0": "0",
-  //         "1": tokenId,
-  //         id: "0",
-  //         token: tokenId,
-  //       },
-  //     ]);
-  //   }
-  // });
+  it("test vault new channel", async () => {
+    const block = await vault.call(
+      "newChannel",
+      [tokenId, addressArr, threshold],
+      { amount: "0" }
+    );
+    expect(await vault.query("numChannels", [])).to.be.deep.equal(["1"]);
+    expect(await vault.query("infoKeepers", [0])).to.be.deep.equal([
+      threshold,
+      addressArr,
+    ]);
+    expect(await vault.query("channels", [0])).to.be.deep.equal([
+      "0",
+      "3b1b8e33d2323635e8e2d2af169091f6702995e2514a4484201d0e33d4267a9d",
+      "0",
+      "f52c591730dfe81ac45343fe807fa31d619ece6c8d8cb062ccd6174c34908d4d",
+      "tti_5649544520544f4b454e6e40",
+      "0",
+    ]);
+    {
+      // expect KeepersAddition event
+      const events = await vault.getPastEvents("KeepersAddition", {
+        fromHeight: block.height,
+        toHeight: block.height,
+      });
+      expect(events.map((event: any) => event.returnValues)).to.be.deep.equal([
+        {
+          "0": "0",
+          id: "0",
+        },
+      ]);
+    }
+    {
+      // expect LogChannelsAddition event
+      const events = await vault.getPastEvents("LogChannelsAddition", {
+        fromHeight: block.height,
+        toHeight: block.height,
+      });
+      expect(events.map((event: any) => event.returnValues)).to.be.deep.equal([
+        {
+          "0": "0",
+          "1": tokenId,
+          id: "0",
+          token: tokenId,
+        },
+      ]);
+    }
+  });
 
-  // it("test vault new keepers", async () => {
-  //   const block = await vault.call("newKeepers", [addressArr, threshold], {
-  //     amount: "0",
-  //   });
-  //   expect(await vault.query("infoKeepers", [0])).to.be.deep.equal([
-  //     threshold,
-  //     addressArr,
-  //   ]);
+  it("test vault new keepers", async () => {
+    const block = await vault.call("newKeepers", [addressArr, threshold], {
+      amount: "0",
+    });
+    expect(await vault.query("infoKeepers", [0])).to.be.deep.equal([
+      threshold,
+      addressArr,
+    ]);
 
-  //   {
-  //     // expect KeepersAddition event
-  //     const events = await vault.getPastEvents("KeepersAddition", {
-  //       fromHeight: block.height,
-  //       toHeight: block.height,
-  //     });
-  //     expect(events.map((event: any) => event.returnValues)).to.be.deep.equal([
-  //       {
-  //         "0": "0",
-  //         id: "0",
-  //       },
-  //     ]);
-  //   }
-  // });
+    {
+      // expect KeepersAddition event
+      const events = await vault.getPastEvents("KeepersAddition", {
+        fromHeight: block.height,
+        toHeight: block.height,
+      });
+      expect(events.map((event: any) => event.returnValues)).to.be.deep.equal([
+        {
+          "0": "0",
+          id: "0",
+        },
+      ]);
+    }
+  });
 
-  // it("test vault [newChannelWithHash]", async () => {
-  //   const inputHash =
-  //     "0x291ea23ff9ad101ca92b3a1ea2cb9687731d7a8251e2ec7cfd432456503a5920";
-  //   const outputHash =
-  //     "0x391ea23ff9ad101ca92b3a1ea2cb9687731d7a8251e2ec7cfd432456503a5920";
-  //   const keeperId = "0";
-  //   const channelId = "0";
+  it("test vault [newChannelWithHash]", async () => {
+    const inputHash =
+      "0x291ea23ff9ad101ca92b3a1ea2cb9687731d7a8251e2ec7cfd432456503a5920";
+    const outputHash =
+      "0x391ea23ff9ad101ca92b3a1ea2cb9687731d7a8251e2ec7cfd432456503a5920";
+    const keeperId = "0";
+    const channelId = "0";
 
-  //   await vault.call("newKeepers", [addressArr, threshold], {
-  //     amount: "0",
-  //   });
+    await vault.call("newKeepers", [addressArr, threshold], {
+      amount: "0",
+    });
 
-  //   const block = await vault.call(
-  //     "newChannelWithHash",
-  //     [tokenId, inputHash, outputHash, keeperId],
-  //     { amount: "0" }
-  //   );
-  //   expect(await vault.query("numChannels", [])).to.be.deep.equal(["1"]);
-  //   expect(await vault.query("channels", [channelId])).to.be.deep.equal([
-  //     "0",
-  //     inputHash.replace("0x", ""),
-  //     "0",
-  //     outputHash.replace("0x", ""),
-  //     tokenId,
-  //     keeperId,
-  //   ]);
-  //   {
-  //     // expect LogChannelsAddition event
-  //     const events = await vault.getPastEvents("LogChannelsAddition", {
-  //       fromHeight: block.height,
-  //       toHeight: block.height,
-  //     });
-  //     expect(events.map((event: any) => event.returnValues)).to.be.deep.equal([
-  //       {
-  //         "0": "0",
-  //         "1": tokenId,
-  //         id: "0",
-  //         token: tokenId,
-  //       },
-  //     ]);
-  //   }
-  // });
+    const block = await vault.call(
+      "newChannelWithHash",
+      [tokenId, inputHash, outputHash, keeperId],
+      { amount: "0" }
+    );
+    expect(await vault.query("numChannels", [])).to.be.deep.equal(["1"]);
+    expect(await vault.query("channels", [channelId])).to.be.deep.equal([
+      "0",
+      inputHash.replace("0x", ""),
+      "0",
+      outputHash.replace("0x", ""),
+      tokenId,
+      keeperId,
+    ]);
+    {
+      // expect LogChannelsAddition event
+      const events = await vault.getPastEvents("LogChannelsAddition", {
+        fromHeight: block.height,
+        toHeight: block.height,
+      });
+      expect(events.map((event: any) => event.returnValues)).to.be.deep.equal([
+        {
+          "0": "0",
+          "1": tokenId,
+          id: "0",
+          token: tokenId,
+        },
+      ]);
+    }
+  });
 
-  // it("test vault output", async () => {
-  //   const inputHash =
-  //     "0x391ea23ff9ad101ca92b3a1ea2cb9687731d7a8251e2ec7cfd432456503a5920";
-  //   const outputHash =
-  //     "0xbdecf81ef1b90044720406696860ab03fd0dfdd3b867c83ad52a2d791cc0f008";
-  //   const keeperId = "0";
-  //   const channelId = "0";
-  //   await vault.call("newKeepers", [addressArr, threshold], {
-  //     amount: "0",
-  //   });
-  //   await vault.call(
-  //     "newChannelWithHash",
-  //     [tokenId, inputHash, outputHash, keeperId],
-  //     { amount: "0" }
-  //   );
+  it("test vault outputs", async () => {
+    const inputHash =
+      "0x391ea23ff9ad101ca92b3a1ea2cb9687731d7a8251e2ec7cfd432456503a5920";
+    const outputHash =
+      "0xbdecf81ef1b90044720406696860ab03fd0dfdd3b867c83ad52a2d791cc0f008";
+    const keeperId = "0";
+    const channelId = "0";
+    await vault.call("newKeepers", [addressArr, threshold], {
+      amount: "0",
+    });
+    await vault.call(
+      "newChannelWithHash",
+      [tokenId, inputHash, outputHash, keeperId],
+      { amount: "0" }
+    );
 
-  //   const outputs = [
-  //     {
-  //       hash: "0x3ebfdb413885a703ac9dca2dab593e16a210af4729ad4970bf7e32edc0efa29f",
-  //       dest: "vite_cecce91eb5ed40879105e1c780c572d087bb6ec91db043f422",
-  //       value: "240000000000000000",
-  //     },
-  //     {
-  //       hash: "0x140b45a310a52dd9a782b46141cc19863581979f57316fce4a84a5b023c883d3",
-  //       dest: "vite_cecce91eb5ed40879105e1c780c572d087bb6ec91db043f422",
-  //       value: "250000000000000000",
-  //     },
-  //   ];
+    const outputs = [
+      {
+        hash: "0x3ebfdb413885a703ac9dca2dab593e16a210af4729ad4970bf7e32edc0efa29f",
+        dest: "vite_cecce91eb5ed40879105e1c780c572d087bb6ec91db043f422",
+        value: "240000000000000000",
+      },
+      {
+        hash: "0x140b45a310a52dd9a782b46141cc19863581979f57316fce4a84a5b023c883d3",
+        dest: "vite_cecce91eb5ed40879105e1c780c572d087bb6ec91db043f422",
+        value: "250000000000000000",
+      },
+    ];
 
-  //   for (let i = 0; i < outputs.length; i++) {
-  //     let approved = [];
-  //     for (let j = 0; j < keepers.length; j++) {
-  //       approved.push(approveOutput(keepers[j], vault, keeperId, outputs[i]));
-  //     }
-  //     await Promise.all(approved);
-  //     await output(vault, channelId, outputs[i]);
-  //   }
-  // });
+    for (let i = 0; i < outputs.length; i++) {
+      let approved = [];
+      for (let j = 0; j < keepers.length; j++) {
+        approved.push(approveOutput(keepers[j], vault, keeperId, outputs[i]));
+      }
+      await Promise.all(approved);
+      await output(vault, channelId, outputs[i]);
+    }
+  });
 
-  it("test vault input", async () => {
+  it("test vault inputs", async () => {
     const inputHash =
       "0x391ea23ff9ad101ca92b3a1ea2cb9687731d7a8251e2ec7cfd432456503a5920";
     const outputHash =
