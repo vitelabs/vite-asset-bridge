@@ -1,24 +1,12 @@
 [
-  {
-    "inputs": [
-      { "internalType": "tokenId", "name": "_tid", "type": "tokenId" },
-      {
-        "internalType": "address payable[]",
-        "name": "_keepers",
-        "type": "address[]"
-      },
-      { "internalType": "uint8", "name": "_threshold", "type": "uint8" }
-    ],
-    "stateMutability": "payable",
-    "type": "constructor"
-  },
+  { "inputs": [], "stateMutability": "nonpayable", "type": "constructor" },
   {
     "anonymous": false,
     "inputs": [
       {
         "indexed": false,
         "internalType": "bytes32",
-        "name": "id",
+        "name": "outputHash",
         "type": "bytes32"
       }
     ],
@@ -29,7 +17,7 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "uint256",
         "name": "index",
         "type": "uint256"
@@ -37,7 +25,7 @@
       {
         "indexed": false,
         "internalType": "bytes32",
-        "name": "id",
+        "name": "inputHash",
         "type": "bytes32"
       },
       {
@@ -54,7 +42,7 @@
       },
       {
         "indexed": false,
-        "internalType": "address payable",
+        "internalType": "address",
         "name": "from",
         "type": "address"
       }
@@ -67,8 +55,14 @@
     "inputs": [
       {
         "indexed": true,
+        "internalType": "uint256",
+        "name": "channelId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
         "internalType": "bytes32",
-        "name": "id",
+        "name": "inputHash",
         "type": "bytes32"
       },
       {
@@ -97,6 +91,38 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "KeepersAddition",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "tokenId",
+        "name": "token",
+        "type": "tokenId"
+      }
+    ],
+    "name": "LogChannelsAddition",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": false,
         "internalType": "uint256",
         "name": "index",
@@ -105,12 +131,12 @@
       {
         "indexed": false,
         "internalType": "bytes32",
-        "name": "id",
+        "name": "outputHash",
         "type": "bytes32"
       },
       {
         "indexed": false,
-        "internalType": "address payable",
+        "internalType": "address",
         "name": "dest",
         "type": "address"
       },
@@ -125,9 +151,10 @@
     "type": "event"
   },
   {
-    "executionBehavior": "async",
     "inputs": [
-      { "internalType": "bytes32", "name": "id", "type": "bytes32" },
+      { "internalType": "uint256", "name": "keeperId", "type": "uint256" },
+      { "internalType": "uint256", "name": "id", "type": "uint256" },
+      { "internalType": "bytes32", "name": "outputHash", "type": "bytes32" },
       { "internalType": "address payable", "name": "dest", "type": "address" },
       { "internalType": "uint256", "name": "value", "type": "uint256" }
     ],
@@ -137,16 +164,42 @@
     "type": "function"
   },
   {
-    "executionBehavior": "async",
-    "inputs": [{ "internalType": "bytes32", "name": "id", "type": "bytes32" }],
+    "inputs": [
+      { "internalType": "uint256", "name": "keeperId", "type": "uint256" },
+      { "internalType": "bytes32", "name": "outputHash", "type": "bytes32" }
+    ],
     "name": "approveOutput",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "executionBehavior": "async",
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "channels",
+    "outputs": [
+      { "internalType": "uint256", "name": "inputId", "type": "uint256" },
+      { "internalType": "bytes32", "name": "inputHash", "type": "bytes32" },
+      { "internalType": "uint256", "name": "outputId", "type": "uint256" },
+      { "internalType": "bytes32", "name": "outputHash", "type": "bytes32" },
+      { "internalType": "tokenId", "name": "erc20", "type": "tokenId" },
+      { "internalType": "uint256", "name": "keeperId", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "i", "type": "uint256" }],
+    "name": "infoKeepers",
+    "outputs": [
+      { "internalType": "uint256", "name": "", "type": "uint256" },
+      { "internalType": "address[]", "name": "", "type": "address[]" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
+      { "internalType": "uint256", "name": "id", "type": "uint256" },
       { "internalType": "bytes", "name": "dest", "type": "bytes" },
       { "internalType": "uint256", "name": "value", "type": "uint256" }
     ],
@@ -156,9 +209,75 @@
     "type": "function"
   },
   {
-    "executionBehavior": "async",
     "inputs": [
-      { "internalType": "bytes32", "name": "id", "type": "bytes32" },
+      { "internalType": "bytes32", "name": "", "type": "bytes32" },
+      { "internalType": "address", "name": "", "type": "address" }
+    ],
+    "name": "inputProvedKeepers",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "keepers",
+    "outputs": [
+      { "internalType": "uint8", "name": "threshold", "type": "uint8" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "tokenId", "name": "_erc20", "type": "tokenId" },
+      { "internalType": "address[]", "name": "_keepers", "type": "address[]" },
+      { "internalType": "uint8", "name": "_threshold", "type": "uint8" }
+    ],
+    "name": "newChannel",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "tokenId", "name": "_erc20", "type": "tokenId" },
+      { "internalType": "bytes32", "name": "_inputHash", "type": "bytes32" },
+      { "internalType": "bytes32", "name": "_outputHash", "type": "bytes32" },
+      { "internalType": "uint256", "name": "_keeperId", "type": "uint256" }
+    ],
+    "name": "newChannelWithHash",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address[]", "name": "_keepers", "type": "address[]" },
+      { "internalType": "uint8", "name": "_threshold", "type": "uint8" }
+    ],
+    "name": "newKeepers",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "numChannels",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "numKeepers",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "id", "type": "uint256" },
+      { "internalType": "bytes32", "name": "outputHash", "type": "bytes32" },
       { "internalType": "address payable", "name": "dest", "type": "address" },
       { "internalType": "uint256", "name": "value", "type": "uint256" }
     ],
@@ -168,112 +287,32 @@
     "type": "function"
   },
   {
-    "executionBehavior": "async",
     "inputs": [
       { "internalType": "uint8", "name": "sigV", "type": "uint8" },
       { "internalType": "bytes32", "name": "sigR", "type": "bytes32" },
       { "internalType": "bytes32", "name": "sigS", "type": "bytes32" },
-      { "internalType": "bytes32", "name": "id", "type": "bytes32" }
+      { "internalType": "bytes32", "name": "inputHash", "type": "bytes32" },
+      { "internalType": "uint256", "name": "channelId", "type": "uint256" }
     ],
-    "name": "proveInputId",
+    "name": "proveInputHash",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "executionBehavior": "sync",
+    "inputs": [
+      { "internalType": "bytes32", "name": "_hash", "type": "bytes32" }
+    ],
+    "name": "spent",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
-    "name": "approvedCnt",
-    "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }],
-    "stateMutability": "view",
-    "type": "offchain"
-  },
-  {
-    "executionBehavior": "sync",
-    "inputs": [
-      { "internalType": "bytes32", "name": "", "type": "bytes32" },
-      { "internalType": "address payable", "name": "", "type": "address" }
-    ],
-    "name": "approvedKeepers",
+    "name": "spentHashes",
     "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
     "stateMutability": "view",
-    "type": "offchain"
-  },
-  {
-    "executionBehavior": "sync",
-    "inputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
-    "name": "blockedOutputIds",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-    "stateMutability": "view",
-    "type": "offchain"
-  },
-  {
-    "executionBehavior": "sync",
-    "inputs": [],
-    "name": "inputIndex",
-    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-    "stateMutability": "view",
-    "type": "offchain"
-  },
-  {
-    "executionBehavior": "sync",
-    "inputs": [
-      { "internalType": "bytes32", "name": "", "type": "bytes32" },
-      { "internalType": "address payable", "name": "", "type": "address" }
-    ],
-    "name": "inputProvedKeepers",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-    "stateMutability": "view",
-    "type": "offchain"
-  },
-  {
-    "executionBehavior": "sync",
-    "inputs": [
-      { "internalType": "address payable", "name": "", "type": "address" }
-    ],
-    "name": "keepers",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-    "stateMutability": "view",
-    "type": "offchain"
-  },
-  {
-    "executionBehavior": "sync",
-    "inputs": [],
-    "name": "outputIndex",
-    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-    "stateMutability": "view",
-    "type": "offchain"
-  },
-  {
-    "executionBehavior": "sync",
-    "inputs": [],
-    "name": "prevInputId",
-    "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
-    "stateMutability": "view",
-    "type": "offchain"
-  },
-  {
-    "executionBehavior": "sync",
-    "inputs": [],
-    "name": "prevOutputId",
-    "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
-    "stateMutability": "view",
-    "type": "offchain"
-  },
-  {
-    "executionBehavior": "sync",
-    "inputs": [],
-    "name": "threshold",
-    "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }],
-    "stateMutability": "view",
-    "type": "offchain"
-  },
-  {
-    "executionBehavior": "sync",
-    "inputs": [],
-    "name": "tid",
-    "outputs": [{ "internalType": "tokenId", "name": "", "type": "tokenId" }],
-    "stateMutability": "view",
-    "type": "offchain"
+    "type": "function"
   }
 ]

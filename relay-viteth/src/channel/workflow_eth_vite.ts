@@ -1,14 +1,21 @@
 import { ChannelVite } from "./channelVite";
 import { ChannelEther } from "./channelEther";
 import { wallet } from "@vite/vitejs";
-
+import { ChannelOptions, WorkflowOptions, toJobs } from "./common";
 export class WorkflowEthVite {
   channelVite: ChannelVite;
   channelEther: ChannelEther;
 
-  constructor(channelVite: ChannelVite, channelEther: ChannelEther) {
+  jobs: Map<string, ChannelOptions>;
+
+  constructor(
+    channelVite: ChannelVite,
+    channelEther: ChannelEther,
+    options: WorkflowOptions[]
+  ) {
     this.channelEther = channelEther;
     this.channelVite = channelVite;
+    this.jobs = toJobs(options, "ether", "vite");
   }
 
   async step1() {
@@ -73,15 +80,15 @@ export class WorkflowEthVite {
     );
     console.log(destAddress);
     const result = await this.channelVite.outputIndex();
-    if(!result || result.length === 0) {
+    if (!result || result.length === 0) {
       return;
     }
     const outputIdx = result[0];
-    if(!outputIdx ){
+    if (!outputIdx) {
       console.warn("undefined outputIdx");
       return;
     }
-    if(BigInt(outputIdx)+1n > BigInt(input.index) ) {
+    if (BigInt(outputIdx) + 1n > BigInt(input.index)) {
       console.warn("output index skip", outputIdx, input.index.toString());
       await this.channelEther.updateInfo("_confirmed", {
         height: String(input.height),
@@ -91,12 +98,12 @@ export class WorkflowEthVite {
       });
       return;
     }
-    if(BigInt(outputIdx)+1n != BigInt(input.index) ) {
+    if (BigInt(outputIdx) + 1n != BigInt(input.index)) {
       console.warn("output index error", outputIdx, input.index.toString());
       return;
     }
     await this.channelVite.approveAndExecOutput(
-      input.id,
+      input.inputHash,
       destAddress,
       input.event.value.toString()
     );
@@ -107,7 +114,7 @@ export class WorkflowEthVite {
       txIndex: input.txIndex,
       logIndex: input.logIndex,
     });
-  } 
+  }
 
   async step2() {}
 }

@@ -1,4 +1,16 @@
 import { ethers } from "ethers";
+
+export interface ChannelOptions {
+  network: string;
+  channelId: string;
+  tokenId: string;
+}
+
+export interface WorkflowOptions {
+  from: ChannelOptions;
+  to: ChannelOptions;
+}
+
 interface EndpointCfg {
   type: string;
   url: string;
@@ -39,4 +51,26 @@ export function privateKey(cfg: any) {
     return wallet.privateKey;
   }
   throw new Error("error account");
+}
+
+export function toWorkflowOptions(options: ChannelOptions[][]) {
+  // todo: implement
+}
+
+
+
+
+export function toJobs(
+  options: WorkflowOptions[],
+  from: string,
+  to: string
+): Map<string, ChannelOptions> {
+  const jobs = new Map<string, ChannelOptions>();
+  for (const option of options) {
+    if (option.from.network != "ether" || option.to.network != "vite") {
+      throw new Error(`error workflow options`);
+    }
+    jobs.set(option.from.channelId, option.to);
+  }
+  return jobs;
 }

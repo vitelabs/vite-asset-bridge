@@ -23,8 +23,6 @@ interface Input {
   logIndex: number;
 }
 
-const ConfirmedThreshold = 0n;
-
 const ETH_INFO_PATH_PREFIX = ".channel_ether/info";
 
 export class ChannelEther {
@@ -45,6 +43,8 @@ export class ChannelEther {
 
   fromBlockHeight: string;
 
+
+  confirmedThreshold:number;
   constructor(cfg: any, dataDir: string) {
     this.etherChannelAbi = _channelAbi;
     this.etherKeeperAbi = _keeperAbi;
@@ -72,7 +72,9 @@ export class ChannelEther {
     );
     this.etherKeeperThreshold = 100000;
     this.signer = new ethers.Wallet(this.signerKey, this.etherProvider);
+    this.confirmedThreshold = cfg.confirmedThreshold;
   }
+
   async init() {
     this.etherKeeperThreshold = await this.etherKeeperContract.threshold();
   }
@@ -96,7 +98,7 @@ export class ChannelEther {
     }
     const current = await this.etherProvider.getBlockNumber();
 
-    let toHeight = BigInt(current) - ConfirmedThreshold;
+    let toHeight = BigInt(current) - BigInt(this.confirmedThreshold);
     if (BigInt(toHeight) > BigInt(fromHeight) + 5000n) {
       toHeight = BigInt(fromHeight) + 5000n;
     }
@@ -125,7 +127,7 @@ export class ChannelEther {
       toHeight,
       inputs: inputs.map((input: any) => {
         return {
-          id: input.args.id,
+          inputHash: input.args.inputHash,
           index: input.args.index,
           height: input.blockNumber,
           txIndex: input.transactionIndex,

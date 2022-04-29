@@ -1,13 +1,20 @@
 import { ChannelVite, confirmed as txConfirmed } from "./channelVite";
 import { ChannelEther } from "./channelEther";
+import { WorkflowOptions, ChannelOptions, toJobs } from "./common";
 
 export class WorkflowViteEth {
   channelVite: ChannelVite;
   channelEther: ChannelEther;
+  jobs: Map<string, ChannelOptions>;
 
-  constructor(channelVite: ChannelVite, channelEther: ChannelEther) {
+  constructor(
+    channelVite: ChannelVite,
+    channelEther: ChannelEther,
+    options: WorkflowOptions[]
+  ) {
     this.channelEther = channelEther;
     this.channelVite = channelVite;
+    this.jobs = toJobs(options, "vite", "ether");
   }
 
   async step1() {
@@ -32,7 +39,8 @@ export class WorkflowViteEth {
       // check input tx confirmed
       const isConfirmed = await txConfirmed(
         this.channelVite.viteProvider,
-        input.hash
+        input.hash,
+        this.channelVite.confirmedThreshold
       );
 
       if (!isConfirmed) {
@@ -46,14 +54,17 @@ export class WorkflowViteEth {
       return;
     }
 
-    const sig = await this.channelEther.signId("0x" + input.event.id);
+    const sig = await this.channelEther.signId("0x" + input.event.inputHash);
 
     const proved = await this.channelVite.inputProvedKeepers(
-      input.event.id,
+      input.event.inputHash,
       this.channelVite.signerAddress
     );
-    if (proved && proved[0] === '1') {
-      console.log(`input proved [${input.event.index}] [${input.event.id}]`, proved);
+    if (proved && proved[0] === "1") {
+      console.log(
+        `input proved [${input.event.index}] [${input.event.inputHash}]`,
+        proved
+      );
     } else {
       await this.channelVite.proveInputId(sig.v, sig.r, sig.s, input.event.id);
     }
@@ -89,11 +100,11 @@ export class WorkflowViteEth {
     console.log(proved);
     const provedEvents = await proved.events
       .filter((x: any) => {
-        return x.event.id === input.event.id;
+        return x.event.inputHash === input.event.inputHash;
       })
       .filter(async (x: any) => {
         return await this.channelEther.isKeeper(
-          "0x" + x.event.id,
+          "0x" + x.event.inputHash,
           "0x" + x.event.sigR,
           "0x" + x.event.sigS,
           x.event.sigV
@@ -104,10 +115,10 @@ export class WorkflowViteEth {
       return;
     }
 
-    console.log("ether approve id:", input.event.id);
+    console.log("ether approve id:", input.event.inputHash);
     console.log("approve input", JSON.stringify(provedEvents));
     await this.channelEther.approveAndExecOutput(
-      "0x" + input.event.id,
+      "0x" + input.event.inputHash,
       provedEvents
         .slice(0, this.channelEther.etherKeeperThreshold)
         .map((x: any) => {

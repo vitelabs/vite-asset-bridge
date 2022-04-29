@@ -12,6 +12,7 @@ async function run() {
     throw new Error("config file not found, " + jsonCfg);
   }
 
+  // read config file
   const cfg = JSON.parse(fs.readFileSync(jsonCfg).toString());
   const workflow = new Workflow(cfg, dataDir);
 

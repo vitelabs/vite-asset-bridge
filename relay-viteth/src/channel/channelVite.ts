@@ -16,7 +16,6 @@ interface ConfirmedInfo {
 
 const VITE_INFO_PATH_PREFIX = ".channel_vite/info";
 
-const ConfirmedThreshold = 1;
 
 export class ChannelVite {
   infoPath: string;
@@ -29,6 +28,8 @@ export class ChannelVite {
 
   signerAddress: string;
   signerPrivateKey: string;
+
+  confirmedThreshold: number;
 
   constructor(cfg: any, dataDir: string) {
     this.viteChannelAbi = _viteAbi;
@@ -46,6 +47,7 @@ export class ChannelVite {
     const viteSigner = viteWallet.deriveAddress(cfg.account.index);
     this.signerAddress = viteSigner.address;
     this.signerPrivateKey = viteSigner.privateKey;
+    this.confirmedThreshold = cfg.confirmedThreshold;
   }
 
   getInfo(prefix: string): any {
@@ -362,7 +364,7 @@ async function readContract(
   });
 }
 
-export async function confirmed(provider: any, hash: string) {
+export async function confirmed(provider: any, hash: string, confirmedThreshold: number) {
   return provider
     .request("ledger_getAccountBlockByHash", hash)
     .then((block: any) => {
@@ -372,7 +374,7 @@ export async function confirmed(provider: any, hash: string) {
         if (!block.confirmedHash) {
           return false;
         }
-        if (block.confirmedTimes < ConfirmedThreshold) {
+        if (block.confirmedTimes < confirmedThreshold) {
           return false;
         }
         return true;
