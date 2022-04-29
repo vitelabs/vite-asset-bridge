@@ -3,6 +3,8 @@ import { ChannelEther } from "./channelEther";
 import { WorkflowEthVite } from "./workflow_eth_vite";
 import { WorkflowViteEth } from "./workflow_vite_eth";
 
+import { toWorkflowOptions } from "./common";
+
 export class Workflow {
   [x: string]: any;
   workflowViteEth: WorkflowViteEth;
@@ -10,17 +12,25 @@ export class Workflow {
   channelVite: ChannelVite;
   channelEther: ChannelEther;
 
-  constructor(cfg: any, dataDir:string) {
+  constructor(cfg: any, dataDir: string) {
     this.channelVite = new ChannelVite(cfg.vite, dataDir);
     this.channelEther = new ChannelEther(cfg.ether, dataDir);
 
+    const workflowOptions = toWorkflowOptions(cfg.channels, ["vite", "ether"]);
+    const viteToEther = workflowOptions.get("vite-ether");
+    const etherToVite = workflowOptions.get("ether-vite");
+    if (!viteToEther || !etherToVite) {
+      throw new Error("error channel options");
+    }
     this.workflowViteEth = new WorkflowViteEth(
       this.channelVite,
-      this.channelEther
+      this.channelEther,
+      viteToEther
     );
     this.workflowEthVite = new WorkflowEthVite(
       this.channelVite,
-      this.channelEther
+      this.channelEther,
+      etherToVite
     );
   }
   async init() {

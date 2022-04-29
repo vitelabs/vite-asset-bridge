@@ -53,12 +53,51 @@ export function privateKey(cfg: any) {
   throw new Error("error account");
 }
 
-export function toWorkflowOptions(options: ChannelOptions[][]) {
+export function toWorkflowOptions(
+  options: ChannelOptions[][],
+  limits: string[]
+): Map<string, WorkflowOptions[]> {
   // todo: implement
+
+  const result = new Map<string, WorkflowOptions[]>();
+  const limitSet = new Set(limits);
+  for (const option of options) {
+    if (option.length != 2) {
+      throw new Error(`error channelOptions`);
+    }
+    for (const channel of option) {
+      if (!limitSet.has(channel.network)) {
+        throw new Error(`not support ${channel.network}`);
+      }
+    }
+    pushIfNotExists(result, option[0], option[1]);
+    pushIfNotExists(result, option[1], option[0]);
+  }
+  return result;
 }
 
+function pushIfNotExists(
+  m: Map<string, WorkflowOptions[]>,
+  from: ChannelOptions,
+  to: ChannelOptions
+) {
+  const { key, workflow } = generateWorkflow(from, to);
+  let flows = m.get(key);
+  if (flows) {
+    flows.push(workflow);
+  } else {
+    flows = [];
+    flows.push(workflow);
+    m.set(key, flows);
+  }
+}
 
-
+function generateWorkflow(from: ChannelOptions, to: ChannelOptions) {
+  return {
+    key: `${from.network}-${to.network}`,
+    workflow: { from, to } as WorkflowOptions,
+  };
+}
 
 export function toJobs(
   options: WorkflowOptions[],
