@@ -11,6 +11,9 @@ struct Channel {
     bytes32 inputHash;
     uint256 outputId;
     bytes32 outputHash;
+
+    uint8 decimal;
+    uint8 oppoDecimal;
     IERC20 erc20;
     IKeeper keeper;
 }
@@ -35,14 +38,14 @@ contract Vault is IVault {
     );
 
     constructor(IKeeper _keeper) {
-        newChannel(IERC20(0x00), _keeper);
+        newChannel(IERC20(0x00), _keeper, 18, 18);
     }
 
     function spent(bytes32 _hash) public view override returns (bool) {
         return spentHashes[_hash];
     }
 
-    function newChannel(IERC20 _erc20, IKeeper _keeper)
+    function newChannel(IERC20 _erc20, IKeeper _keeper, uint8 _decimal, uint8 _oppoDecimal)
         public
         override
         returns (uint256)
@@ -54,14 +57,16 @@ contract Vault is IVault {
             abi.encodePacked(uint256(1), block.number, channels.length, _erc20)
         );
 
-        return newChannelWithHash(_erc20, _keeper, _inputHash, _outputHash);
+        return newChannelWithHash(_erc20, _keeper, _inputHash, _outputHash, _decimal, _oppoDecimal);
     }
 
     function newChannelWithHash(
         IERC20 _erc20,
         IKeeper _keeper,
         bytes32 _inputHash,
-        bytes32 _outputHash
+        bytes32 _outputHash,
+        uint8 _decimal, 
+        uint8 _oppoDecimal
     ) public returns (uint256) {
         channels.push(
             Channel({
@@ -69,6 +74,8 @@ contract Vault is IVault {
                 inputHash: _inputHash,
                 outputId: 0,
                 outputHash: _outputHash,
+                decimal:_decimal,
+                oppoDecimal:_oppoDecimal,
                 erc20: _erc20,
                 keeper: _keeper
             })
@@ -126,6 +133,14 @@ contract Vault is IVault {
         channel.keeper.approved(outputHash);
 
         requireAndUpdateSpentHashes(nextHash);
+
+        uint8 decimal = channel.decimal;
+        uint8 oppoDecimal = channel.oppoDecimal;
+        if(oppoDecimal < decimal) {
+            value = value * (10**(decimal-oppoDecimal));
+        } else {
+            value = value / (10**(oppoDecimal-decimal));
+        }
 
         if (id == 0) {
             dest.transfer(value);

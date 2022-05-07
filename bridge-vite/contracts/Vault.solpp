@@ -19,7 +19,7 @@ interface IVault {
         uint256 value
     ) external;
 
-    function newChannel(vitetoken _erc20, address[] memory _keepers, uint8 _threshold)
+    function newChannel(vitetoken _erc20, address[] memory _keepers, uint8 _threshold, uint8 _decimal, uint8 _oppoDecimal)
         external
         returns (uint256);
 }
@@ -31,6 +31,8 @@ struct Channel {
     bytes32 inputHash;
     uint256 outputId;
     bytes32 outputHash;
+    uint8 decimal;
+    uint8 oppoDecimal;
     vitetoken erc20;
     uint256 keeperId;
 }
@@ -76,7 +78,7 @@ contract Vault is IVault {
         return spentHashes[_hash];
     }
 
-    function newChannel(vitetoken _erc20, address[] memory _keepers, uint8 _threshold)
+    function newChannel(vitetoken _erc20, address[] memory _keepers, uint8 _threshold, uint8 _decimal, uint8 _oppoDecimal)
         public
         override
         returns (uint256)
@@ -90,7 +92,7 @@ contract Vault is IVault {
 
         uint256 keeperId = newKeepers(_keepers, _threshold);
 
-        return newChannelWithHash(_erc20, _inputHash, _outputHash, keeperId);
+        return newChannelWithHash(_erc20, _inputHash, _outputHash, keeperId, _decimal, _oppoDecimal);
     }
 
     function newKeepers(address[] memory _keepers, uint8 _threshold) public returns(uint256) {
@@ -110,7 +112,9 @@ contract Vault is IVault {
         vitetoken _erc20,
         bytes32 _inputHash,
         bytes32 _outputHash,
-        uint256 _keeperId
+        uint256 _keeperId,
+        uint8 _decimal,
+        uint8 _oppoDecimal
     ) public returns (uint256) {
         channels.push(
             Channel({
@@ -118,6 +122,8 @@ contract Vault is IVault {
                 inputHash: _inputHash,
                 outputId: 0,
                 outputHash: _outputHash,
+                decimal:_decimal,
+                oppoDecimal:_oppoDecimal,
                 erc20: _erc20,
                 keeperId:_keeperId
             })
@@ -178,6 +184,14 @@ contract Vault is IVault {
 
         requireAndUpdateSpentHashes(nextHash);
 
+        uint8 decimal = channel.decimal;
+        uint8 oppoDecimal = channel.oppoDecimal;
+        if(oppoDecimal < decimal) {
+            value = value * (10**(decimal-oppoDecimal));
+        } else {
+            value = value / (10**(oppoDecimal-decimal));
+        }
+        
       	dest.transfer(channel.erc20, value);
 
         emit Output(channel.outputId + 1, nextHash, dest, value);
