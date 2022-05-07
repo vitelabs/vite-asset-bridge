@@ -19,7 +19,7 @@ interface IVault {
         uint256 value
     ) external;
 
-    function newChannel(vitetoken _erc20, address[] memory _keepers, uint8 _threshold, uint8 _decimal, uint8 _oppoDecimal)
+    function newChannel(vitetoken _erc20, address[] memory _keepers, uint8 _threshold, int8 _decimalDiff)
         external
         returns (uint256);
 }
@@ -31,8 +31,7 @@ struct Channel {
     bytes32 inputHash;
     uint256 outputId;
     bytes32 outputHash;
-    uint8 decimal;
-    uint8 oppoDecimal;
+    int8 decimalDiff; // decimal - oppositeDecimal
     vitetoken erc20;
     uint256 keeperId;
 }
@@ -78,7 +77,7 @@ contract Vault is IVault {
         return spentHashes[_hash];
     }
 
-    function newChannel(vitetoken _erc20, address[] memory _keepers, uint8 _threshold, uint8 _decimal, uint8 _oppoDecimal)
+    function newChannel(vitetoken _erc20, address[] memory _keepers, uint8 _threshold, int8 _decimalDiff)
         public
         override
         returns (uint256)
@@ -92,7 +91,7 @@ contract Vault is IVault {
 
         uint256 keeperId = newKeepers(_keepers, _threshold);
 
-        return newChannelWithHash(_erc20, _inputHash, _outputHash, keeperId, _decimal, _oppoDecimal);
+        return newChannelWithHash(_erc20, _inputHash, _outputHash, keeperId, _decimalDiff);
     }
 
     function newKeepers(address[] memory _keepers, uint8 _threshold) public returns(uint256) {
@@ -113,8 +112,7 @@ contract Vault is IVault {
         bytes32 _inputHash,
         bytes32 _outputHash,
         uint256 _keeperId,
-        uint8 _decimal,
-        uint8 _oppoDecimal
+        int8 _decimalDiff
     ) public returns (uint256) {
         channels.push(
             Channel({
@@ -122,8 +120,7 @@ contract Vault is IVault {
                 inputHash: _inputHash,
                 outputId: 0,
                 outputHash: _outputHash,
-                decimal:_decimal,
-                oppoDecimal:_oppoDecimal,
+                decimalDiff:_decimalDiff,
                 erc20: _erc20,
                 keeperId:_keeperId
             })
@@ -145,6 +142,18 @@ contract Vault is IVault {
 
 		require(msg.value == value, "Transfer Value Require Failed.");
 		require(msg.token == channel.erc20, "Transfer Token Require Failed");
+
+        int8 decimalDiff = channel.decimalDiff;
+        uint8 decimalDiffAbs = abs(decimalDiff);
+        if(decimalDiff >= 0){
+            require(value >= (10**decimalDiffAbs), "min value required");
+        }
+
+        if(decimalDiff <= 0) {
+            value = value * (10**decimalDiffAbs);
+        } else {
+            value = value / (10**decimalDiffAbs);
+        }
 
         bytes32 nextHash = keccak256(
             abi.encodePacked(channel.inputId, dest, value, channel.inputHash)
@@ -184,14 +193,6 @@ contract Vault is IVault {
 
         requireAndUpdateSpentHashes(nextHash);
 
-        uint8 decimal = channel.decimal;
-        uint8 oppoDecimal = channel.oppoDecimal;
-        if(oppoDecimal < decimal) {
-            value = value * (10**(decimal-oppoDecimal));
-        } else {
-            value = value / (10**(oppoDecimal-decimal));
-        }
-        
       	dest.transfer(channel.erc20, value);
 
         emit Output(channel.outputId + 1, nextHash, dest, value);
@@ -204,7 +205,10 @@ contract Vault is IVault {
         spentHashes[_hash] = true;
     }
 
-    
+    function abs(int8 x) public pure returns (uint8) {
+        return x >= 0 ? uint8(x) : uint8(-x);
+    }
+
     event Approved(bytes32 outputHash);
 
     function approved(uint256 keeperId, bytes32 outputHash) internal view {

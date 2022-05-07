@@ -20,7 +20,7 @@ interface IVault {
         uint256 value
     ) external;
 
-    function newChannel(IERC20 _erc20, IKeeper _keeper, uint8 _decimal, uint8 _oppoDecimal)
+    function newChannel(IERC20 _erc20, IKeeper _keeper, int8 _decimalDiff)
         external
         returns (uint256);
 }
