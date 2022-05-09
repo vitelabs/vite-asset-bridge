@@ -1,7 +1,7 @@
 // ---------
 // ---------
 import * as utils from "../utils/utils";
-import { ViteAPI, abi } from "@vite/vitejs";
+import { ViteAPI, abi as abiUtils } from "@vite/vitejs";
 const { HTTP_RPC } = require("@vite/vitejs-http");
 import { wallet, accountBlock } from "@vite/vitejs";
 import { constant } from "@vite/vitejs";
@@ -16,7 +16,6 @@ interface ConfirmedInfo {
 
 const VITE_INFO_PATH_PREFIX = ".channel_vite/info";
 
-
 export class ChannelVite {
   infoPath: string;
 
@@ -30,6 +29,8 @@ export class ChannelVite {
   signerPrivateKey: string;
 
   confirmedThreshold: number;
+
+  keeperId: number;
 
   constructor(cfg: any, dataDir: string) {
     this.viteChannelAbi = _viteAbi;
@@ -48,6 +49,7 @@ export class ChannelVite {
     this.signerAddress = viteSigner.address;
     this.signerPrivateKey = viteSigner.privateKey;
     this.confirmedThreshold = cfg.confirmedThreshold;
+    this.keeperId = cfg.keeperId;
   }
 
   getInfo(prefix: string): any {
@@ -145,7 +147,7 @@ export class ChannelVite {
     channelAbi: Array<{ name: string; type: string }>,
     name: string
   ) {
-    const result = abi.decodeLog(
+    const result = abiUtils.decodeLog(
       channelAbi,
       Buffer.from(log.data ? log.data : "", "base64").toString("hex"),
       log.topics.slice(1, log.topics.length),
@@ -163,7 +165,7 @@ export class ChannelVite {
     );
 
     // console.log(abiItem);
-    const result = abi.decodeLog(
+    const result = abiUtils.decodeLog(
       channelAbi,
       Buffer.from(log.data ? log.data : "", "base64").toString("hex"),
       log.topics.slice(1, log.topics.length),
@@ -175,9 +177,9 @@ export class ChannelVite {
   encodeLogId(item: { name: string; type: string }) {
     let id = "";
     if (item.type === "function") {
-      id = abi.encodeFunctionSignature(item);
+      id = abiUtils.encodeFunctionSignature(item);
     } else if (item.type === "event") {
-      id = abi.encodeLogSignature(item);
+      id = abiUtils.encodeLogSignature(item);
     }
     return id;
   }
@@ -206,7 +208,7 @@ export class ChannelVite {
     );
   }
 
-  async approveAndExecOutput(id: string, dest: string, value: string) {
+  async approveAndExecOutput(keeperId:number, channelId:string, id: string, dest: string, value: string) {
     const sendResult = await writeContract(
       this.viteProvider,
       this.signerAddress,
@@ -214,53 +216,54 @@ export class ChannelVite {
       this.viteChannelAddress,
       this.viteChannelAbi,
       "approveAndExecOutput",
-      [id, dest, value]
+      [keeperId, channelId, id, dest, value]
     );
   }
 
-  async proveInputId(v: number, r: string, s: string, id: string) {
+  async proveInputHash(v: number, r: string, s: string, id: string, channelId: string) {
     const sendResult = await writeContract(
       this.viteProvider,
       this.signerAddress,
       this.signerPrivateKey,
       this.viteChannelAddress,
       this.viteChannelAbi,
-      "proveInputId",
-      [v, r, s, id]
+      "proveInputHash",
+      [v, r, s, id, channelId]
     );
   }
 
-  async inputIndex() {
-    return readContract(
+  async prevInputId(channelId: string) {
+    const channel = await readContract(
       this.viteProvider,
       this.viteChannelAddress,
       this.viteChannelAbi,
       this.viteOffChainCode,
-      "inputIndex",
-      []
+      "channels",
+      [channelId]
     );
+
+    if (!channel) {
+      return null;
+    } else {
+      return channel[0];
+    }
   }
 
-  async prevInputId() {
-    return readContract(
+  async outputIndex(channelId: string) {
+    const channel = await readContract(
       this.viteProvider,
       this.viteChannelAddress,
       this.viteChannelAbi,
       this.viteOffChainCode,
-      "prevInputId",
-      []
+      "channels",
+      [channelId]
     );
-  }
 
-  async outputIndex() {
-    return readContract(
-      this.viteProvider,
-      this.viteChannelAddress,
-      this.viteChannelAbi,
-      this.viteOffChainCode,
-      "outputIndex",
-      []
-    );
+    if (!channel) {
+      return null;
+    } else {
+      return channel[2];
+    }
   }
 
   async prevOutputId() {
@@ -304,6 +307,20 @@ export class ChannelVite {
       [id, address]
     );
   }
+  async outputProvedKeepers(keeperId:number, outputHash: string, address: string) {
+    const result = await readContract(
+      this.viteProvider,
+      this.viteChannelAddress,
+      this.viteChannelAbi,
+      this.viteOffChainCode,
+      "outputApproved",
+      [keeperId,outputHash, address]
+    );
+    if(!result){
+      return undefined;
+    }
+    return +result[0]===1;
+  }
 }
 
 async function writeContract(
@@ -343,28 +360,50 @@ async function writeContract(
 async function readContract(
   provider: any,
   to: string,
-  abi: Array<{ name: string; type: string }>,
+  abi: Array<{
+    name: string;
+    type: string;
+    stateMutability: string;
+    outputs: Array<{ type: string }>;
+  }>,
   code: any,
   methodName: string,
   params: any[]
 ) {
   const methodAbi = abi.find((x) => {
-    return x.type === "offchain" && x.name === methodName;
+    return (
+      x.type === "function" &&
+      x.stateMutability === "view" &&
+      x.name === methodName
+    );
   });
   if (!methodAbi) {
     throw new Error("method not found:" + methodName);
   }
 
-  // console.log(to, methodAbi);
-  return provider.callOffChainContract({
+  let data = abiUtils.encodeFunctionCall(methodAbi, params);
+  let dataBase64 = Buffer.from(data, "hex").toString("base64");
+
+  const result = await provider.request("contract_query", {
     address: to,
-    abi: methodAbi,
-    code: code,
-    params: params,
+    data: dataBase64,
   });
+  if (result) {
+    let resultBytes = Buffer.from(result, "base64").toString("hex");
+    let outputs = [];
+    for (let i = 0; i < methodAbi.outputs.length; i++) {
+      outputs.push(methodAbi.outputs[i].type);
+    }
+    return abiUtils.decodeParameters(outputs, resultBytes);
+  }
+  return undefined;
 }
 
-export async function confirmed(provider: any, hash: string, confirmedThreshold: number) {
+export async function confirmed(
+  provider: any,
+  hash: string,
+  confirmedThreshold: number
+) {
   return provider
     .request("ledger_getAccountBlockByHash", hash)
     .then((block: any) => {

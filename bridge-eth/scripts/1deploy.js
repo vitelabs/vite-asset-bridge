@@ -15,13 +15,11 @@ async function deploy() {
     cfg.threshold,
   ]);
 
-  const channel = await deployContract("ChannelERC20", [
-    cfg.erc20,
+  const vault = await deployContract("Vault", [
     keeper.address,
   ]);
 
-  console.log("keeper address:", keeper.address);
-  console.log("channel address:", channel.address);
+  console.log("result: ", JSON.stringify({keeper:keeper.address, vault: vault.address}));
 }
 
 async function main() {

@@ -6,12 +6,42 @@ import { newEtherProvider, privateKey } from "./common";
 import _channelAbi from "./channel.ether.abi.json";
 import _keeperAbi from "./keeper.ether.abi.json";
 
-interface ConfirmedInfo {
-  height: string;
+export interface LogEvent {
+  height: number;
   txIndex: number;
   logIndex: number;
+}
+export interface InputEvent extends LogEvent {
+  channelId: string;
+  index: number;
+  inputHash: string;
+  dest: string;
+  value: string;
+}
 
-  index: string;
+export interface StoredLogIndex extends LogEvent {
+  inputsIndex: { [k: string]: number };
+}
+
+function compareTo(x: LogEvent, y: LogEvent): number {
+  if (x.height < y.height) {
+    return -1;
+  } else if (x.height > y.height) {
+    return 1;
+  }
+
+  if (x.txIndex < y.txIndex) {
+    return -1;
+  } else if (x.txIndex > y.txIndex) {
+    return 1;
+  }
+
+  if (x.logIndex < y.logIndex) {
+    return -1;
+  } else if (x.logIndex > y.logIndex) {
+    return 1;
+  }
+  return 0;
 }
 
 interface Input {
@@ -43,8 +73,7 @@ export class ChannelEther {
 
   fromBlockHeight: string;
 
-
-  confirmedThreshold:number;
+  confirmedThreshold: number;
   constructor(cfg: any, dataDir: string) {
     this.etherChannelAbi = _channelAbi;
     this.etherKeeperAbi = _keeperAbi;
@@ -88,13 +117,38 @@ export class ChannelEther {
     return info;
   }
 
-  updateInfo(prefix: string, info: any) {
+  private updateInfo(prefix: string, info: any) {
     utils.writeJson(this.infoPath + prefix, JSON.stringify(info));
   }
 
-  async scanConfirmedInputs(fromHeight: string) {
-    if (fromHeight === "0") {
-      fromHeight = this.fromBlockHeight;
+  saveConfirmedInputs(storedIndex: StoredLogIndex) {
+    this.updateInfo("_confirmed", storedIndex);
+  }
+
+  filterAndSortInput(info: LogEvent, inputs: InputEvent[]): InputEvent[] {
+    const filteredInputs = inputs.filter((x: any) => {
+      return compareTo(x, info) > 0;
+    });
+
+    return filteredInputs.sort(compareTo);
+  }
+
+  checkInputIndex(input: InputEvent, storedInputs: StoredLogIndex): boolean {
+    const storedIndex = storedInputs.inputsIndex[input.channelId];
+    if (!storedIndex && input.index === 1) {
+      return true;
+    }
+    if (storedIndex && input.index === storedIndex + 1) {
+      return true;
+    }
+    return false;
+  }
+
+  async scanConfirmedInputs(
+    fromHeight: number
+  ): Promise<{ toHeight: number; events: InputEvent[] }> {
+    if (fromHeight === 0) {
+      fromHeight = +this.fromBlockHeight;
     }
     const current = await this.etherProvider.getBlockNumber();
 
@@ -116,23 +170,25 @@ export class ChannelEther {
 
     const inputs = await this.etherChannelContract.queryFilter(
       filterInput,
-      +fromHeight,
+      fromHeight,
       +toHeight.toString()
     );
 
     if (!inputs || inputs.length === 0) {
-      return { toHeight, inputs: [] };
+      return { toHeight: +toHeight.toString(), events: [] };
     }
     return {
-      toHeight,
-      inputs: inputs.map((input: any) => {
+      toHeight: +toHeight.toString(),
+      events: inputs.map((input: any) => {
         return {
-          inputHash: input.args.inputHash,
-          index: input.args.index,
-          height: input.blockNumber,
+          height: +input.blockNumber,
           txIndex: input.transactionIndex,
           logIndex: input.logIndex,
-          event: input.args,
+          channelId: input.args.channelId.toString(),
+          index: +input.args.index.toString(),
+          inputHash: input.args.inputHash,
+          dest: input.args.dest,
+          value: input.args.value.toString(),
         };
       }),
     };
@@ -157,7 +213,7 @@ export class ChannelEther {
       sigs.push(Object.assign(sig, { address: address }));
     });
 
-    sigs.sort(function(a, b) {
+    sigs.sort(function (a, b) {
       if (a.address < b.address) return -1;
       if (a.address > b.address) return 1;
       return 0;
@@ -184,7 +240,7 @@ export class ChannelEther {
       sigs.push(Object.assign(sig, { address: address }));
     });
 
-    sigs.sort(function(a, b) {
+    sigs.sort(function (a, b) {
       if (a.address < b.address) return -1;
       if (a.address > b.address) return 1;
       return 0;

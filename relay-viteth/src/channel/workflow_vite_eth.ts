@@ -49,6 +49,14 @@ export class WorkflowViteEth {
     }
     console.log(input);
 
+
+    
+    const ethChannelId = this.jobs.get(input.event.channelId.toString())?.channelId;
+    if(!ethChannelId){
+      console.log("eth channel id not exist.", input.event.channelId.toString(), ethChannelId);
+      return;
+    }
+
     if (input.event.index != (BigInt(info.index) + 1n).toString()) {
       console.warn("index not match", info.index, input.event.index);
       return;
@@ -66,7 +74,7 @@ export class WorkflowViteEth {
         proved
       );
     } else {
-      await this.channelVite.proveInputId(sig.v, sig.r, sig.s, input.event.id);
+      await this.channelVite.proveInputHash(sig.v, sig.r, sig.s, input.event.id, ethChannelId);
     }
 
     await this.channelVite.updateInfo("_confirmed", {

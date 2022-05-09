@@ -19,6 +19,12 @@
       {
         "indexed": false,
         "internalType": "uint256",
+        "name": "channelId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
         "name": "index",
         "type": "uint256"
       },
@@ -122,6 +128,12 @@
   {
     "anonymous": false,
     "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "channelId",
+        "type": "uint256"
+      },
       {
         "indexed": false,
         "internalType": "uint256",
@@ -284,6 +296,17 @@
     "name": "output",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "keeperId", "type": "uint256" },
+      { "internalType": "bytes32", "name": "outputHash", "type": "bytes32" },
+      { "internalType": "address", "name": "keeper", "type": "address" }
+    ],
+    "name": "outputApproved",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
     "type": "function"
   },
   {
