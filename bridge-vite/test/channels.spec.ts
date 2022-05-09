@@ -17,6 +17,9 @@ const addressArr = [
   "vite_10930bed5611218376df608b976743fa3127b5f008e8f27f83",
 ];
 const threshold = "3";
+const decimalDiff = -2;
+const minValue = "100000000000000000";
+const maxValue = "10000000000000000000";
 
 const keepers: any[] = [];
 
@@ -57,7 +60,7 @@ describe("test Vault", () => {
   it("test vault new channel", async () => {
     const block = await vault.call(
       "newChannel",
-      [tokenId, addressArr, threshold],
+      [tokenId, addressArr, threshold, decimalDiff, minValue, maxValue],
       { amount: "0" }
     );
     expect(await vault.query("numChannels", [])).to.be.deep.equal(["1"]);
@@ -67,9 +70,12 @@ describe("test Vault", () => {
     ]);
     expect(await vault.query("channels", [0])).to.be.deep.equal([
       "0",
-      "3b1b8e33d2323635e8e2d2af169091f6702995e2514a4484201d0e33d4267a9d",
+      "97fbd18313234e2f9c2d3fdc02aea5dcc6aeb564ab1cdaaf57777044667ecc03",
       "0",
-      "f52c591730dfe81ac45343fe807fa31d619ece6c8d8cb062ccd6174c34908d4d",
+      "150923ed3284416e935f71be0af1f5bbd6517eefedff4931ebf7755c7660c14c",
+      decimalDiff.toString(),
+      minValue,
+      maxValue,
       "tti_5649544520544f4b454e6e40",
       "0",
     ]);
@@ -141,7 +147,7 @@ describe("test Vault", () => {
 
     const block = await vault.call(
       "newChannelWithHash",
-      [tokenId, inputHash, outputHash, keeperId],
+      [tokenId, inputHash, outputHash, keeperId, decimalDiff, minValue, maxValue],
       { amount: "0" }
     );
     expect(await vault.query("numChannels", [])).to.be.deep.equal(["1"]);
@@ -150,6 +156,9 @@ describe("test Vault", () => {
       inputHash.replace("0x", ""),
       "0",
       outputHash.replace("0x", ""),
+      decimalDiff.toString(),
+      minValue,
+      maxValue,
       tokenId,
       keeperId,
     ]);
@@ -182,7 +191,7 @@ describe("test Vault", () => {
     });
     await vault.call(
       "newChannelWithHash",
-      [tokenId, inputHash, outputHash, keeperId],
+      [tokenId, inputHash, outputHash, keeperId, decimalDiff, minValue, maxValue],
       { amount: "0" }
     );
 
@@ -205,7 +214,7 @@ describe("test Vault", () => {
         approved.push(approveOutput(keepers[j], vault, keeperId, outputs[i]));
       }
       await Promise.all(approved);
-      await output(vault, channelId, outputs[i]);
+      await output(vault, channelId, outputs[i], decimalDiff);
     }
   });
 
@@ -221,7 +230,7 @@ describe("test Vault", () => {
     });
     await vault.call(
       "newChannelWithHash",
-      [tokenId, inputHash, outputHash, keeperId],
+      [tokenId, inputHash, outputHash, keeperId, decimalDiff, minValue, maxValue],
       { amount: "0" }
     );
 
@@ -282,7 +291,8 @@ async function approveOutput(
 async function output(
   vault: any,
   channelId: string,
-  output: { hash: string; dest: string; value: string }
+  output: { hash: string; dest: string; value: string },
+  decimalDiff: any
 ) {
   expect(await vault.query("numChannels", [])).to.be.deep.equal(["1"]);
 
@@ -296,6 +306,8 @@ async function output(
     }
   );
 
+  let scaledValue = decimalDiff < 0 ? parseInt(output.value) * (Math.pow(10, -decimalDiff)) : parseInt(output.value) / (Math.pow(10, decimalDiff));
+
   {
     // expect Approved event
     const events = await vault.getPastEvents("Output", {
@@ -307,12 +319,12 @@ async function output(
         "0": (+outputId + 1).toString(),
         "1": output.hash.replace("0x", ""),
         "2": output.dest,
-        "3": output.value,
+        "3": scaledValue.toString(),
 
-        id: (+outputId + 1).toString(),
-        _hash: output.hash.replace("0x", ""),
+        index: (+outputId + 1).toString(),
+        outputHash: output.hash.replace("0x", ""),
         dest: output.dest,
-        value: output.value,
+        value: scaledValue.toString(),
       },
     ]);
   }
@@ -357,8 +369,8 @@ async function input(
         "2": input.dest.replace("0x", ""),
         "3": input.value,
         "4": fromAddress,
-        id: (+prevInputId + 1).toString(),
-        _hash: inputHash.replace("0x",""),
+        index: (+prevInputId + 1).toString(),
+        inputHash: inputHash.replace("0x",""),
         dest: input.dest.replace("0x", ""),
         value: input.value,
         from: fromAddress,

@@ -11,6 +11,13 @@ use(solidity);
 let vault;
 let erc20;
 let accounts;
+let minValue;
+let maxValue;
+let decimalDiff;
+
+const ethDecimalDiff = 0;
+const ethMinValue = "100000000000000000" // 0.1
+const ethMaxValue = "10000000000000000000"; // 10
 
 async function deployContract(name, args) {
   let contractMode = await ethers.getContractFactory(name);
@@ -25,18 +32,22 @@ describe("Vault Inputs Outputs", function () {
     accounts = await ethers.getSigners();
   });
   beforeEach(async function () {
+    decimalDiff = 2;
+    minValue = "100000000000000000" 
+    maxValue = "10000000000000000000"; 
+    
     keeper = await deployContract("KeeperMultiSig", [
       [accounts[0].address, accounts[1].address, accounts[2].address],
       3,
     ]);
     erc20 = await deployContract("ERC20Token", ["TTT", "TTTT"]);
-    vault = await deployContract("Vault", [keeper.address]);
+    vault = await deployContract("Vault", [keeper.address, ethDecimalDiff, ethMinValue, ethMaxValue]);
 
-    await expect(vault.newChannel(erc20.address, keeper.address, {}))
+    await expect(vault.newChannel(erc20.address, keeper.address, decimalDiff, minValue , maxValue, {}))
       .to.emit(vault, "LogChannelsAddition")
       .withArgs(1, erc20.address);
 
-    await expect(vault.newChannel(erc20.address, keeper.address, {}))
+    await expect(vault.newChannel(erc20.address, keeper.address, decimalDiff, minValue, maxValue, {}))
       .to.emit(vault, "LogChannelsAddition")
       .withArgs(2, erc20.address);
   });
@@ -170,8 +181,14 @@ describe("Vault Inputs Outputs", function () {
         .toString()
     );
 
-    await erc20.mint(vault.address, sum);
+    let sum1;
+    if (decimalDiff < 0) {
+      sum1 = sum.mul(10 ** (-decimalDiff));
+    } else {
+      sum1 = sum.div(10 ** decimalDiff);
+    }
 
+    await erc20.mint(vault.address, sum1);
     outputs.forEach((output) => {
       // output.dest = ethers.utils.hexlify(output.dest);
       output.value = ethers.utils.parseEther(output.value);
@@ -183,7 +200,7 @@ describe("Vault Inputs Outputs", function () {
     console.log(JSON.stringify([+prevInputId, prevInputHash]));
 
     for (let i = 0; i < outputs.length; i++) {
-      await approveAndExecOutput(keeper, vault, channelId, outputs[i]);
+      await approveAndExecOutput(keeper, vault, channelId, outputs[i], decimalDiff);
     }
   });
 });
@@ -221,7 +238,7 @@ async function input(sender, vault, channelId, input) {
   assert.equal((afterBalance - beforeBalance).toString(), value.toString());
 }
 
-async function approveAndExecOutput(_keeper, vault, channelId, _output) {
+async function approveAndExecOutput(_keeper, vault, channelId, _output, decimalDiff) {
   const channel = await vault.channels(channelId);
 
   const nextOutputHash = ethers.utils.solidityKeccak256(
@@ -234,6 +251,7 @@ async function approveAndExecOutput(_keeper, vault, channelId, _output) {
   // expect(nextOutputHash).to.be.equal(_output.hash);
   // console.log(_output.hash,_output.dest);
   const beforeBalance = await erc20.balanceOf(vault.address);
+  let scaledValue = decimalDiff < 0 ? _output.value.mul(10 ** (-decimalDiff)) : _output.value.div(10 ** (decimalDiff));
 
   await expect(
     _keeper.approveAndExecOutput(
@@ -250,13 +268,13 @@ async function approveAndExecOutput(_keeper, vault, channelId, _output) {
     .to.emit(_keeper, "Approved")
     .withArgs(_output.hash)
     .to.emit(vault, "Output")
-    .withArgs(+channel.outputId + 1, _output.hash, _output.dest, _output.value);
+    .withArgs(+channel.outputId + 1, _output.hash, _output.dest, scaledValue);
 
 
     const afterBalance = await erc20.balanceOf(vault.address);
     // console.log(afterBalance.toString(), beforeBalance.toString(), _output.value.toString());
 
-    assert.equal((beforeBalance - afterBalance).toString(), _output.value.toString());
+    assert.equal((beforeBalance - afterBalance).toString(), scaledValue);
 }
 
 async function generateSignatures(_id) {

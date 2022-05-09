@@ -38,8 +38,8 @@ contract Vault is IVault {
         uint256 value
     );
 
-    constructor(IKeeper _keeper) {
-        newChannel(IERC20(0x00), _keeper, 0, 0.1, 10);
+    constructor(IKeeper _keeper, int8 _decimalDiff, uint256 _minValue, uint256 _maxValue) {
+        newChannel(IERC20(0x00), _keeper, _decimalDiff, _minValue, _maxValue);
     }
 
     function spent(bytes32 _hash) public view override returns (bool) {
