@@ -174,7 +174,7 @@ describe("test Vault", () => {
     const inputHash =
       "0x391ea23ff9ad101ca92b3a1ea2cb9687731d7a8251e2ec7cfd432456503a5920";
     const outputHash =
-      "0xbdecf81ef1b90044720406696860ab03fd0dfdd3b867c83ad52a2d791cc0f008";
+      "0x292a8561565ad9b09dd7696982e5d7d714b53e788281ba10e7ecf94def84e168";
     const keeperId = "0";
     const channelId = "0";
     await vault.call("newKeepers", [addressArr, threshold], {
@@ -188,13 +188,13 @@ describe("test Vault", () => {
 
     const outputs = [
       {
-        hash: "0x3ebfdb413885a703ac9dca2dab593e16a210af4729ad4970bf7e32edc0efa29f",
+        hash: "0x7132831d70ba53d48d5897ea565eb1e8fe2cc4b24280260e9ab349df43d37b6c",
         dest: "vite_cecce91eb5ed40879105e1c780c572d087bb6ec91db043f422",
         value: "240000000000000000",
       },
       {
-        hash: "0x140b45a310a52dd9a782b46141cc19863581979f57316fce4a84a5b023c883d3",
-        dest: "vite_cecce91eb5ed40879105e1c780c572d087bb6ec91db043f422",
+        hash: "0x22a255fc1668de36e1bac5368416aed431b296f002141807e4340d152ce56281",
+        dest: "vite_f7de29b05f4d98348098143611f44c0469e1c9d4c677cbe4a4",
         value: "250000000000000000",
       },
     ];
@@ -304,13 +304,15 @@ async function output(
     });
     expect(events.map((event: any) => event.returnValues)).to.be.deep.equal([
       {
-        "0": (+outputId + 1).toString(),
-        "1": output.hash.replace("0x", ""),
-        "2": output.dest,
-        "3": output.value,
+        "0": channelId,
+        "1": (+outputId + 1).toString(),
+        "2": output.hash.replace("0x", ""),
+        "3": output.dest,
+        "4": output.value,
 
-        id: (+outputId + 1).toString(),
-        _hash: output.hash.replace("0x", ""),
+        channelId: channelId,
+        index: (+outputId + 1).toString(),
+        outputHash: output.hash.replace("0x", ""),
         dest: output.dest,
         value: output.value,
       },

@@ -32,7 +32,7 @@ export function privateKey(cfg: any) {
   //   throw new Error("error account.address");
   // }
   if (cfg.mnemonic) {
-    if (!cfg.index) {
+    if (cfg.index === undefined) {
       throw new Error("error mnemonic index");
     }
 
@@ -112,4 +112,55 @@ export function toJobs(
     jobs.set(option.from.channelId, option.to);
   }
   return jobs;
+}
+
+
+
+export interface LogEvent {
+  height: number;
+  txIndex: number;
+  logIndex: number;
+}
+export interface InputEvent extends LogEvent {
+  channelId: string;
+  index: number;
+  inputHash: string;
+  dest: string;
+  value: string;
+}
+
+export interface StoredLogIndex extends LogEvent {
+  inputsIndex: { [k: string]: number };
+}
+
+export function logCompare(x: LogEvent, y: LogEvent): number {
+  if (x.height < y.height) {
+    return -1;
+  } else if (x.height > y.height) {
+    return 1;
+  }
+
+  if (x.txIndex < y.txIndex) {
+    return -1;
+  } else if (x.txIndex > y.txIndex) {
+    return 1;
+  }
+
+  if (x.logIndex < y.logIndex) {
+    return -1;
+  } else if (x.logIndex > y.logIndex) {
+    return 1;
+  }
+  return 0;
+}
+
+export function checkInputIndex(input: InputEvent, storedInputs: StoredLogIndex): boolean {
+  const storedIndex = storedInputs.inputsIndex[input.channelId];
+  if (!storedIndex && input.index === 1) {
+    return true;
+  }
+  if (storedIndex && input.index === storedIndex + 1) {
+    return true;
+  }
+  return false;
 }

@@ -30,6 +30,10 @@ async function deploy() {
   await erc20.mint(vault.address, ethers.utils.parseEther("2.4"));
   await erc20.mint(owner.address, ethers.utils.parseEther("33"));
 
+
+  // keeper need to submit signature
+  await owner.sendTransaction({to: cfg.keepers[0], value: ethers.utils.parseEther("1.2")})
+
   const result = {
     keeper: keeper.address,
     vault: vault.address,

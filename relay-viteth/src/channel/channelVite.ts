@@ -8,10 +8,28 @@ import { constant } from "@vite/vitejs";
 import _viteAbi from "./channel.vite.abi.json";
 import { offChainCode } from "./channel.vite.code.json";
 import { decodeLog } from "@vite/vitejs/distSrc/abi";
-
+import { InputEvent, LogEvent, StoredLogIndex } from "./common";
 interface ConfirmedInfo {
   scannedHeight: string;
   index: string;
+}
+
+interface ViteInputEvent extends InputEvent {
+  accountBlockHash: string;
+}
+
+export interface ViteProvedEvent extends LogEvent {
+  channelId: string;
+  inputHash: string;
+  sigR: string;
+  sigS: string;
+  sigV: number;
+}
+
+interface ViteLogEvent {
+  height: number;
+  hash: string;
+  args: any;
 }
 
 const VITE_INFO_PATH_PREFIX = ".channel_vite/info";
@@ -61,21 +79,80 @@ export class ChannelVite {
     return info;
   }
 
-  updateInfo(prefix: string, info: any) {
+  private updateInfo(prefix: string, info: any) {
     utils.writeJson(this.infoPath + prefix, JSON.stringify(info));
   }
 
-  async scanInputEvents(fromHeight: string) {
-    console.log("vite", "scan input events", fromHeight);
-    return this.scanEvents(fromHeight, "Input");
+  saveConfirmedInputs(storedIndex: StoredLogIndex) {
+    this.updateInfo("_confirmed", storedIndex);
+  }
+  saveSubmitInputs(storedIndex: StoredLogIndex) {
+    this.updateInfo("_submit", storedIndex);
   }
 
-  async scanInputProvedEvents(fromHeight: string) {
+  async scanInputEvents(fromHeight: number): Promise<{
+    toHeight: number;
+    events: ViteInputEvent[];
+  }> {
+    // console.log("vite", "scan input events", fromHeight);
+    const { toHeight, events } = await this.scanEvents(fromHeight, "Input");
+    if (events && events.length > 0) {
+      return {
+        toHeight,
+        events: events.map((event: ViteLogEvent) => {
+          return {
+            height: event.height,
+            txIndex: -1,
+            logIndex: -1,
+            channelId: event.args.channelId.toString(),
+            index: +event.args.index.toString(),
+            inputHash: event.args.inputHash,
+            dest: event.args.dest,
+            value: event.args.value.toString(),
+            accountBlockHash: event.hash,
+          };
+        }),
+      };
+    }
+    return { toHeight, events: [] };
+  }
+
+  async scanInputProvedEvents(fromHeight: number): Promise<{
+    toHeight: number;
+    events: ViteProvedEvent[];
+  }> {
     console.log("vite", "scan proved events", fromHeight);
-    return this.scanEvents(fromHeight, "InputProved");
+    const { toHeight, events } = await this.scanEvents(
+      fromHeight,
+      "InputProved"
+    );
+    if (events && events.length > 0) {
+      return {
+        toHeight,
+        events: events.map((event: ViteLogEvent) => {
+          return {
+            height: event.height,
+            txIndex: -1,
+            logIndex: -1,
+            channelId: event.args.channelId.toString(),
+            inputHash: event.args.inputHash,
+            sigR: event.args.sigR,
+            sigS: event.args.sigS,
+            sigV: event.args.sigV,
+          };
+        }),
+      };
+    }
+    return { toHeight, events: [] };
   }
 
-  async scanEvents(fromHeight: string, eventName: string) {
+  async scanEvents(
+    fromHeight: number,
+    eventName: string
+  ): Promise<{
+    toHeight: number;
+    events: ViteLogEvent[];
+  }> {
     const channelAddress = this.viteChannelAddress;
     let heightRange = {
       [channelAddress]: {
@@ -116,7 +193,7 @@ export class ChannelVite {
           eventName
         );
         return {
-          event: event,
+          args: event,
           height: input.accountBlockHeight,
           hash: input.accountBlockHash,
         };
@@ -208,7 +285,13 @@ export class ChannelVite {
     );
   }
 
-  async approveAndExecOutput(keeperId:number, channelId:string, id: string, dest: string, value: string) {
+  async approveAndExecOutput(
+    keeperId: number,
+    channelId: string,
+    id: string,
+    dest: string,
+    value: string
+  ) {
     const sendResult = await writeContract(
       this.viteProvider,
       this.signerAddress,
@@ -220,7 +303,13 @@ export class ChannelVite {
     );
   }
 
-  async proveInputHash(v: number, r: string, s: string, id: string, channelId: string) {
+  async proveInputHash(
+    v: number,
+    r: string,
+    s: string,
+    id: string,
+    channelId: string
+  ) {
     const sendResult = await writeContract(
       this.viteProvider,
       this.signerAddress,
@@ -265,16 +354,21 @@ export class ChannelVite {
       return channel[2];
     }
   }
-
-  async prevOutputId() {
-    return readContract(
+  async prevOutputHash(channelId: string) {
+    const channel = await readContract(
       this.viteProvider,
       this.viteChannelAddress,
       this.viteChannelAbi,
       this.viteOffChainCode,
-      "prevOutputId",
-      []
+      "channels",
+      [channelId]
     );
+
+    if (!channel) {
+      return null;
+    } else {
+      return channel[3];
+    }
   }
 
   async approvedCnt(id: string) {
@@ -307,19 +401,23 @@ export class ChannelVite {
       [id, address]
     );
   }
-  async outputProvedKeepers(keeperId:number, outputHash: string, address: string) {
+  async outputProvedKeepers(
+    keeperId: number,
+    outputHash: string,
+    address: string
+  ) {
     const result = await readContract(
       this.viteProvider,
       this.viteChannelAddress,
       this.viteChannelAbi,
       this.viteOffChainCode,
       "outputApproved",
-      [keeperId,outputHash, address]
+      [keeperId, outputHash, address]
     );
-    if(!result){
+    if (!result) {
       return undefined;
     }
-    return +result[0]===1;
+    return +result[0] === 1;
   }
 }
 

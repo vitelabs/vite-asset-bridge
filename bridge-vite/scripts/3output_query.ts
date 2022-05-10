@@ -17,14 +17,9 @@ async function run(): Promise<void> {
   await vault.attach(vaultCfg.vault);
   expect(vault.address).to.be.a("string");
 
-  //   console.log(deployer.address, vault.address, vaultCfg.channelId, inputCfg.dest, inputCfg.value, vault.abi);
-  const block = await vault.call(
-    "input",
-    [vaultCfg.channelId, inputCfg.dest, inputCfg.value],
-    { amount: inputCfg.value }
-  );
+  const channel = await vault.query("channels", [vaultCfg.channelId])
 
-  console.log("result: ", JSON.stringify({ success: true }));
+  console.log("result: ", JSON.stringify({ outputId: channel[2]}));
   return;
 }
 

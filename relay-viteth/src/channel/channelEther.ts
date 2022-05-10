@@ -2,56 +2,10 @@
 // ---------
 import * as utils from "../utils/utils";
 import { ethers } from "ethers";
-import { newEtherProvider, privateKey } from "./common";
+import { newEtherProvider, privateKey, StoredLogIndex, LogEvent,InputEvent,logCompare } from "./common";
 import _channelAbi from "./channel.ether.abi.json";
 import _keeperAbi from "./keeper.ether.abi.json";
 
-export interface LogEvent {
-  height: number;
-  txIndex: number;
-  logIndex: number;
-}
-export interface InputEvent extends LogEvent {
-  channelId: string;
-  index: number;
-  inputHash: string;
-  dest: string;
-  value: string;
-}
-
-export interface StoredLogIndex extends LogEvent {
-  inputsIndex: { [k: string]: number };
-}
-
-function compareTo(x: LogEvent, y: LogEvent): number {
-  if (x.height < y.height) {
-    return -1;
-  } else if (x.height > y.height) {
-    return 1;
-  }
-
-  if (x.txIndex < y.txIndex) {
-    return -1;
-  } else if (x.txIndex > y.txIndex) {
-    return 1;
-  }
-
-  if (x.logIndex < y.logIndex) {
-    return -1;
-  } else if (x.logIndex > y.logIndex) {
-    return 1;
-  }
-  return 0;
-}
-
-interface Input {
-  id: string;
-  index: string;
-
-  height: number;
-  txIndex: number;
-  logIndex: number;
-}
 
 const ETH_INFO_PATH_PREFIX = ".channel_ether/info";
 
@@ -72,6 +26,7 @@ export class ChannelEther {
   signer: ethers.Wallet;
 
   fromBlockHeight: string;
+  submitSigs: boolean;
 
   confirmedThreshold: number;
   constructor(cfg: any, dataDir: string) {
@@ -102,6 +57,7 @@ export class ChannelEther {
     this.etherKeeperThreshold = 100000;
     this.signer = new ethers.Wallet(this.signerKey, this.etherProvider);
     this.confirmedThreshold = cfg.confirmedThreshold;
+    this.submitSigs = cfg.submitSigs;
   }
 
   async init() {
@@ -127,10 +83,10 @@ export class ChannelEther {
 
   filterAndSortInput(info: LogEvent, inputs: InputEvent[]): InputEvent[] {
     const filteredInputs = inputs.filter((x: any) => {
-      return compareTo(x, info) > 0;
+      return logCompare(x, info) > 0;
     });
 
-    return filteredInputs.sort(compareTo);
+    return filteredInputs.sort(logCompare);
   }
 
   checkInputIndex(input: InputEvent, storedInputs: StoredLogIndex): boolean {
@@ -203,7 +159,9 @@ export class ChannelEther {
     const signature = ethers.utils.joinSignature(expandedSig);
     const recoveredAddress = ethers.utils.recoverAddress(msg, signature);
     // console.log("keeper", recoveredAddress);
-    return this.etherKeeperContract.keepers(recoveredAddress);
+    const result = await this.etherKeeperContract.keepers(recoveredAddress);
+    console.log("recovered address", recoveredAddress, result);
+    return result;
   }
 
   async approveId(msg: string, events: any[]) {
@@ -229,11 +187,13 @@ export class ChannelEther {
   }
 
   async approveAndExecOutput(
+    channelId: string,
     msg: string,
     events: any[],
     dest: string,
     value: string
   ) {
+    console.log(msg, events);
     let sigs: any[] = [];
     events.forEach((sig) => {
       const address = ethers.utils.recoverAddress(msg, sig);
@@ -250,12 +210,17 @@ export class ChannelEther {
     const vArr = sigs.map((s) => s.v);
     const sArr = sigs.map((s) => s.s);
 
+    console.log(this.signer.address,"----------");
+    
+    console.log(channelId, msg, dest, value,"----------",await this.prevOutputId(channelId));
+
     await this.etherKeeperContract
       .connect(this.signer)
       .approveAndExecOutput(
         vArr,
         rArr,
         sArr,
+        channelId,
         msg,
         dest,
         value,
@@ -280,8 +245,12 @@ export class ChannelEther {
     return this.etherChannelContract.outputIndex();
   }
 
-  async prevOutputId() {
-    return this.etherChannelContract.prevOutputId();
+  async prevOutputId(channelId:string) {
+    return this.etherChannelContract.channels(channelId);
+  }
+
+  async approved(inputHash:string){
+    return this.etherKeeperContract.approvedIds(inputHash);
   }
 
   async token() {

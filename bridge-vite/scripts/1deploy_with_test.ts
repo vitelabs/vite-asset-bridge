@@ -51,6 +51,7 @@ async function run(): Promise<void> {
 	amount: "0",
   });
 
+
   const block = await vault.call(
 	"newChannelWithHash",
 	[tokenId, channelCfg.inputHash, channelCfg.outputHash, keeperId],

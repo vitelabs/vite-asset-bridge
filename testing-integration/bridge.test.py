@@ -35,26 +35,49 @@ def blockRun(cmd, cwd):
     return runResult
 
 
-# ethNode = subprocess.Popen(["/bin/bash", "-c", "npx hardhat node"],
-#                            shell=False,
-#                            cwd="./bridge-eth")
-# viteNode = subprocess.Popen(["/bin/bash", "-c", "npx vuilder node"],
-#                             shell=False,
-#                             cwd="./bridge-vite")
+def backgroundRunRelay(index, submitted):
+    runFp = subprocess.Popen(
+        ["/bin/bash", "-c", "npx ts-node scripts/workflow_with_test.ts"],
+        shell=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.STDOUT,
+        cwd="./relay-viteth",
+        env={
+            **os.environ.copy(), 'WALLET_INDEX': str(index),
+            'DATA_DIR': "../testing-integration/data." + str(index),
+            'ETH_SUBMIT': str(submitted)
+        })
+    return runFp
 
-# time.sleep(6)
 
-deployEthResult = blockRun("npx hardhat run scripts/1deploy_with_test.js",
+ethNode = subprocess.Popen(["/bin/bash", "-c", "npx hardhat node"],
+                           shell=False,
+                           stdout=subprocess.DEVNULL,
+                           stderr=subprocess.STDOUT,
+                           cwd="./bridge-eth")
+print("ether node started.")
+viteNode = subprocess.Popen(["/bin/bash", "-c", "npx vuilder node"],
+                            shell=False,
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.STDOUT,
+                            cwd="./bridge-vite")
+
+print("vite node started.")
+time.sleep(3)
+deployEthResult = blockRun("npx hardhat run scripts_test/1deploy_with_test.js",
                            "./bridge-eth")
+print("ether contract deployed.")
 
 writeCfg(
     './bridge-vite/scripts/channel.config.json', {
-        'inputHash': deployEthResult['channelInputHash'],
-        'outputHash': deployEthResult['channelOutputHash'],
+        'inputHash': deployEthResult['channelOutputHash'],
+        'outputHash': deployEthResult['channelInputHash'],
     })
 
 deployViteResult = blockRun("npx ts-node scripts/1deploy_with_test.ts",
                             "./bridge-vite")
+
+print("vite contract deployed.")
 
 writeCfg(
     './relay-viteth/scripts/channel.config.json', {
@@ -71,6 +94,7 @@ writeCfg(
     })
 
 blockRun("npx hardhat run scripts_test/2channel_input.js", "./bridge-eth")
+print("ether input done.")
 blockRun("npx hardhat run scripts_test/3ether_height.js", "./bridge-eth")
 
 writeCfg("./bridge-vite/scripts/contract.config.json", {
@@ -78,12 +102,45 @@ writeCfg("./bridge-vite/scripts/contract.config.json", {
     "channelId": deployViteResult["channelId"]
 })
 
-print(deployEthResult)
-print(deployViteResult)
-# kill9(ethNode)
-# kill9(viteNode)
+blockRun("npx ts-node scripts/2input_with_test.ts", "./bridge-vite")
+print("vite input done.")
 
-# ethNode.terminate()
-# viteNode.terminate()
-# ethNode.wait()
-# viteNode.wait()
+print("relay 0 run")
+fp0 = backgroundRunRelay(0, 1)
+print("relay 1 run")
+fp1 = backgroundRunRelay(1, 0)
+print("relay 2 run")
+fp2 = backgroundRunRelay(2, 0)
+
+viteOk = False
+etherOk = False
+while True:
+    if not viteOk:
+        viteOutput = blockRun("npx ts-node scripts/3output_query.ts",
+                              "./bridge-vite")
+        if viteOutput["outputId"] == "1":
+            print("ether -> vite done.")
+            viteOk = True
+    if not etherOk:
+        etherOutput = blockRun(
+            "npx hardhat run scripts_test/4channel_output_query.js",
+            "./bridge-eth")
+        if etherOutput["outputId"] == "1":
+            print("vite -> ether done.")
+            etherOk = True
+    if viteOk and etherOk:
+        break
+    time.sleep(3)
+
+fp0.terminate()
+fp1.terminate()
+fp2.terminate()
+
+fp0.wait()
+fp1.wait()
+fp2.wait()
+
+ethNode.terminate()
+viteNode.terminate()
+ethNode.wait()
+viteNode.wait()
