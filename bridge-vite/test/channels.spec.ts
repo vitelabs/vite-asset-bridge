@@ -170,45 +170,6 @@ describe("test Vault", () => {
     }
   });
 
-  it("test vault outputs", async () => {
-    const inputHash =
-      "0x391ea23ff9ad101ca92b3a1ea2cb9687731d7a8251e2ec7cfd432456503a5920";
-    const outputHash =
-      "0x292a8561565ad9b09dd7696982e5d7d714b53e788281ba10e7ecf94def84e168";
-    const keeperId = "0";
-    const channelId = "0";
-    await vault.call("newKeepers", [addressArr, threshold], {
-      amount: "0",
-    });
-    await vault.call(
-      "newChannelWithHash",
-      [tokenId, inputHash, outputHash, keeperId],
-      { amount: "0" }
-    );
-
-    const outputs = [
-      {
-        hash: "0x7132831d70ba53d48d5897ea565eb1e8fe2cc4b24280260e9ab349df43d37b6c",
-        dest: "vite_cecce91eb5ed40879105e1c780c572d087bb6ec91db043f422",
-        value: "240000000000000000",
-      },
-      {
-        hash: "0x22a255fc1668de36e1bac5368416aed431b296f002141807e4340d152ce56281",
-        dest: "vite_f7de29b05f4d98348098143611f44c0469e1c9d4c677cbe4a4",
-        value: "250000000000000000",
-      },
-    ];
-
-    for (let i = 0; i < outputs.length; i++) {
-      let approved = [];
-      for (let j = 0; j < keepers.length; j++) {
-        approved.push(approveOutput(keepers[j], vault, keeperId, outputs[i]));
-      }
-      await Promise.all(approved);
-      await output(vault, channelId, outputs[i]);
-    }
-  });
-
   it("test vault inputs", async () => {
     const inputHash =
       "0x391ea23ff9ad101ca92b3a1ea2cb9687731d7a8251e2ec7cfd432456503a5920";
@@ -252,74 +213,6 @@ describe("test Vault", () => {
   });
 });
 
-async function approveOutput(
-  from: any,
-  vault: any,
-  keeperId: string,
-  output: { hash: string; dest: string; value: string }
-) {
-  vault.setDeployer(from);
-
-  const block = await vault.call("approveOutput", [keeperId, output.hash], {
-    amount: "0",
-  });
-
-  {
-    // expect Approved event
-    const events = await vault.getPastEvents("Approved", {
-      fromHeight: block.height,
-      toHeight: block.height,
-    });
-    expect(events.map((event: any) => event.returnValues)).to.be.deep.equal([
-      {
-        "0": output.hash.replace("0x", ""),
-        outputHash: output.hash.replace("0x", ""),
-      },
-    ]);
-  }
-}
-
-async function output(
-  vault: any,
-  channelId: string,
-  output: { hash: string; dest: string; value: string }
-) {
-  expect(await vault.query("numChannels", [])).to.be.deep.equal(["1"]);
-
-  const outputId = (await vault.query("channels", [channelId]))[2];
-
-  const block = await vault.call(
-    "output",
-    [channelId, output.hash, output.dest, output.value],
-    {
-      amount: "0",
-    }
-  );
-
-  {
-    // expect Approved event
-    const events = await vault.getPastEvents("Output", {
-      fromHeight: block.height,
-      toHeight: block.height,
-    });
-    expect(events.map((event: any) => event.returnValues)).to.be.deep.equal([
-      {
-        "0": channelId,
-        "1": (+outputId + 1).toString(),
-        "2": output.hash.replace("0x", ""),
-        "3": output.dest,
-        "4": output.value,
-
-        channelId: channelId,
-        index: (+outputId + 1).toString(),
-        outputHash: output.hash.replace("0x", ""),
-        dest: output.dest,
-        value: output.value,
-      },
-    ]);
-  }
-}
-
 async function input(
   fromAddress: string,
   vault: any,
@@ -354,11 +247,13 @@ async function input(
     });
     expect(events.map((event: any) => event.returnValues)).to.be.deep.equal([
       {
-        "0": (+prevInputId + 1).toString(),
-        "1": inputHash.replace("0x",""),
-        "2": input.dest.replace("0x", ""),
-        "3": input.value,
-        "4": fromAddress,
+        "0": channelId,
+        "1": (+prevInputId + 1).toString(),
+        "2": inputHash.replace("0x",""),
+        "3": input.dest.replace("0x", ""),
+        "4": input.value,
+        "5": fromAddress,
+        channelId: channelId,
         index: (+prevInputId + 1).toString(),
         inputHash: inputHash.replace("0x",""),
         dest: input.dest.replace("0x", ""),

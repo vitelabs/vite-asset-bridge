@@ -119,7 +119,7 @@ describe("Vault Inputs Outputs", function () {
         value: "0.24",
       },
       {
-        dest: "vite_f7de29b05f4d98348098143611f44c0469e1c9d4c677cbe4a4",
+        dest: "vite_cecce91eb5ed40879105e1c780c572d087bb6ec91db043f422",
         value: "0.25",
       },
     ];

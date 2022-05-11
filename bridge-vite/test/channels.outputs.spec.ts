@@ -62,7 +62,7 @@ describe("test Vault", () => {
     const inputHash =
       "0x391ea23ff9ad101ca92b3a1ea2cb9687731d7a8251e2ec7cfd432456503a5920";
     const outputHash =
-      "0x36490d626d38eb026e860d6f06283c41469462934529b81620b551d9e7cef778";
+      "0x5d7190d674e6d4433acddeb26448f204940034a572eb0e1b7c44bc05a3c4e867";
     const keeperId = "0";
     const channelId = "0";
     await vault.call("newKeepers", [addressArr, threshold], {
@@ -76,13 +76,13 @@ describe("test Vault", () => {
 
     const outputs = [
       {
-        hash: "0x6814074811a84b38df01bf272c48c6843cdb31bdadf4814dcd2d8ff975c6b184",
+        hash: "0x888631d7c310b8512923cba093059bbe6aef04a7257141266d57d0678a63456a",
         dest: "vite_cecce91eb5ed40879105e1c780c572d087bb6ec91db043f422",
         value: "240000000000000000",
       },
       {
-        hash: "0xeaa983d3979646394ec1f0885ec145d824d912fdf3fc9ee973e14178c4adc9d9",
-        dest: "vite_f7de29b05f4d98348098143611f44c0469e1c9d4c677cbe4a4",
+        hash: "0x5b72aab4d86bf84cbbd8ccf03fe6d60322bd863f24246dbae4cf0606009e466f",
+        dest: "vite_cecce91eb5ed40879105e1c780c572d087bb6ec91db043f422",
         value: "250000000000000000",
       },
     ];
