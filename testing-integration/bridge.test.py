@@ -14,7 +14,7 @@ def parseResult(lines):
         line = line.decode('utf8').strip()
         # print(line, line.startswith("result: "))
         if line.startswith("result: "):
-            return json.loads(line.removeprefix("result: "))
+            return json.loads(line.replace("result: ", ""))
     return None
 
 
