@@ -145,5 +145,9 @@ contract Vault is IVault {
         spentHashes[_hash] = true;
     }
 
+    function channelsLength() public view returns (uint256) {
+        return channels.length;
+    }
+
     receive() external payable {}
 }
