@@ -1,6 +1,8 @@
 import { expect } from "chai";
 const vuilder = require("@vite/vuilder");
 import config from "./deploy.config.json";
+import channelCfg from "./channel.config.json"
+import contractCfg from "./contract.config.json"
 
 async function run(): Promise<void> {
   const provider = vuilder.newProvider(config.http);
@@ -12,16 +14,15 @@ async function run(): Promise<void> {
   // deploy
   const vault = compiledContracts.Vault;
   vault.setDeployer(deployer).setProvider(provider);
-  await vault.deploy({});
+  await vault.attach(contractCfg.vault);
   expect(vault.address).to.be.a("string");
-
-  console.log("vault deployed", vault.address);
-  await vault.call("newKeepers", [config.keepers, config.threshold], {
-    amount: "0",
-  });
+  
+  const block = await vault.call(
+    "newKeepers", [config.keepers, config.threshold],
+    { amount: "0" }
+  );
 
   console.log("new keeper success.")
-
   return;
 }
 

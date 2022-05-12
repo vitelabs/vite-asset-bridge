@@ -1,8 +1,6 @@
 import { expect } from "chai";
 const vuilder = require("@vite/vuilder");
 import config from "./deploy.config.json";
-import channelCfg from "./channel.config.json"
-import contractCfg from "./contract.config.json"
 
 async function run(): Promise<void> {
   const provider = vuilder.newProvider(config.http);
@@ -14,16 +12,10 @@ async function run(): Promise<void> {
   // deploy
   const vault = compiledContracts.Vault;
   vault.setDeployer(deployer).setProvider(provider);
-  await vault.attach(contractCfg.vault);
+  await vault.deploy({});
   expect(vault.address).to.be.a("string");
 
-  const block1 = await vault.call(
-	"newChannelWithHash",
-	[channelCfg.tokenId, channelCfg.inputHash, channelCfg.outputHash, channelCfg.keeperId],
-	{ amount: "0" }
-  );
-
-  console.log("new channel success.")
+  console.log("vault deployed", vault.address);
   return;
 }
 

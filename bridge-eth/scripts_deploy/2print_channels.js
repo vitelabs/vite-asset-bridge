@@ -16,7 +16,7 @@ async function attach(contract, address) {
   return await factory.attach(address);
 }
 
-async function deploy() {
+async function printChannels() {
   const vault = await attach("Vault", vaultCfg.vault);
 
   const [owner] = await ethers.getSigners();
@@ -42,9 +42,9 @@ async function deploy() {
 
 async function main() {
   await hre.run("compile");
-  await deploy();
+  await printChannels();
 }
 
 main().then(() => {
-  console.log("deploy done");
+  console.log("print channels done");
 });

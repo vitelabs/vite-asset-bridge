@@ -9,12 +9,6 @@ async function deployContract(name, args) {
   return contractIns;
 }
 
-
-async function attach(contract, address) {
-  const factory = await ethers.getContractFactory(contract);
-  return await factory.attach(address);
-}
-
 async function deploy() {
   const keeper = await deployContract("KeeperMultiSig", [
     cfg.keepers,
