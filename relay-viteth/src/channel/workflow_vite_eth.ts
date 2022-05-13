@@ -107,7 +107,7 @@ export class WorkflowViteEth {
         sig.r,
         sig.s,
         input.inputHash,
-        ethChannelId
+        input.channelId 
       );
     }
 
@@ -122,7 +122,7 @@ export class WorkflowViteEth {
   }
 
   async step2() {
-    console.log("xxxxxxxxx", !this.channelEther.submitSigs);
+    console.log("[vite->eth] step2 submit sigs", this.channelEther.submitSigs);
     if (!this.channelEther.submitSigs) {
       return;
     }
