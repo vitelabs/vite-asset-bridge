@@ -22,6 +22,13 @@ module.exports = {
           "turtle siren orchard alpha indoor indicate wasp such waste hurt patient correct true firm goose elegant thunder torch hurt shield taste under basket burger",
       },
     },
+    rinkeby: {
+      url: "https://rinkeby.infura.io/v3/7d9b0a77df624ac498e5cec4306a5c6c",
+      accounts: {
+        mnemonic:
+          "turtle siren orchard alpha indoor indicate wasp such waste hurt patient correct true firm goose elegant thunder torch hurt shield taste under basket burger",
+      },
+    },
     local: {
       url: "http://127.0.0.1:8545/",
       accounts: [

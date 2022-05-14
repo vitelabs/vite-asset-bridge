@@ -3,7 +3,7 @@
 pragma solidity ^0.7.3;
 pragma experimental ABIEncoderV2;
 import "./Keeper.sol";
-import "./Channel.sol";
+import "./Vault.sol";
 
 contract KeeperMultiSig is IKeeper {
     uint8 public threshold;
@@ -68,17 +68,18 @@ contract KeeperMultiSig is IKeeper {
         uint8[] calldata sigV,
         bytes32[] calldata sigR,
         bytes32[] calldata sigS,
-        bytes32 id,
+        uint256 channelId,
+        bytes32 outputHash,
         address payable dest,
         uint256 value,
-        IChannel channel
+        IVault vault
     ) public {
-        _approveId(sigV, sigR, sigS, id);
-        if (!approvedIds[id]) {
+        _approveId(sigV, sigR, sigS, outputHash);
+        if (!approvedIds[outputHash]) {
             return;
         }
-        if (!channel.spent(id)) {
-            channel.output(id, dest, value);
+        if (!vault.spent(outputHash)) {
+            vault.output(channelId, outputHash, dest, value);
         }
     }
 }

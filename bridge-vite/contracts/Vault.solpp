@@ -1,49 +1,248 @@
-pragma soliditypp >=0.4.5;
-pragma experimental ABIEncoderV2;
+// SPDX-License-Identifier: GPL-3.0
 
-contract Vault {
-  constructor(tokenId _tid) {
-    tid = _tid;
-  }  
-  
-
-  event Input(uint256 index, bytes32 id, address src, bytes dest, uint256 value);
-
-  tokenId tid;
+pragma soliditypp >=0.8.0;
 
 
-  uint256 public inputIndex;
-  bytes32 public prevInputId;
+interface IVault {
+    function spent(bytes32 _hash) external view returns (bool);
 
-  onMessage input(
-      address src,
-      bytes calldata dest,
-      uint256 value
-  ) payable {
-    require(msg.tokenid == tid, "require tokenid");
-    require(msg.amount == value, "require value");
-    bytes32 id = keccak256(abi.encodePacked(salt, dest, value, prevId));
-    inputIndex = inputIndex + 1;
-    emit Output(inputIndex, id, src, dest, value);
-    prevId = id;
-  }
+    function input(
+        uint256 id,
+        bytes calldata dest,
+        uint256 value
+    ) external payable;
+
+    function output(
+        uint256 id,
+        bytes32 outputHash,
+        address payable dest,
+        uint256 value
+    ) external;
+
+    function newChannel(vitetoken _erc20, address[] memory _keepers, uint8 _threshold)
+        external
+        returns (uint256);
+}
 
 
 
+struct Channel {
+    uint256 inputId;
+    bytes32 inputHash;
+    uint256 outputId;
+    bytes32 outputHash;
+    vitetoken erc20;
+    uint256 keeperId;
+}
 
-  uint256 public outputIndex;
-  bytes32 public prevOutputId;
-  event To(uint256 index, bytes32 id, address dest, uint256 value);
+struct MultiSigKeeper {
+    uint8 threshold;
+    address[] keeperArr;
+    mapping(address=>bool) keepers;
+    mapping(bytes32 => uint8) approvedCnt;
+    mapping(bytes32 =>mapping(address=>bool)) approvedKeepers;
+}
 
-  onMessage output(
-      bytes32 id,
-      address dest,
-      uint256 value
-  ) {
-    dest.transfer(tid, value.amount);
-    outputIndex = outputIndex+1;
-    emit Input(outputIndex, id, dest, value);
-  }
+contract Vault is IVault {
+    Channel[] public channels;
+
+    uint256 public numKeepers;
+    mapping(uint256 => MultiSigKeeper) public keepers;
+    mapping(bytes32 => bool) public spentHashes;
+
+    event LogChannelsAddition(uint256 indexed id, vitetoken indexed token);
+    event KeepersAddition(uint256 indexed id);
+    event Input(
+        uint256 channelId,
+        uint256 index,
+        bytes32 inputHash,
+        bytes dest,
+        uint256 value,
+        address from
+    );
+    event Output(uint256 channelId, uint256 index, bytes32 outputHash, address dest, uint256 value);
+
+    constructor() {
+    }
+
+    function numChannels() public view returns (uint256){
+        return channels.length;
+    }
+
+    function infoKeepers(uint256 i) public view returns(uint256, address[] memory){
+       return (keepers[i].threshold, keepers[i].keeperArr);
+    }
+
+    function spent(bytes32 _hash) public view override returns (bool) {
+        return spentHashes[_hash];
+    }
+
+    function newChannel(vitetoken _erc20, address[] memory _keepers, uint8 _threshold)
+        public
+        override
+        returns (uint256)
+    {
+        bytes32 _inputHash = keccak256(
+            abi.encodePacked(uint256(0), accountheight(), channels.length, _erc20)
+        );
+        bytes32 _outputHash = keccak256(
+            abi.encodePacked(uint256(1), accountheight(), channels.length, _erc20)
+        );
+
+        uint256 keeperId = newKeepers(_keepers, _threshold);
+
+        return newChannelWithHash(_erc20, _inputHash, _outputHash, keeperId);
+    }
+
+    function newKeepers(address[] memory _keepers, uint8 _threshold) public returns(uint256) {
+        MultiSigKeeper storage r = keepers[numKeepers];
+        r.threshold = _threshold;
+        uint256 len = _keepers.length;
+        require(len >= _threshold, "threshold required");
+        for (uint256 i = 0; i < len; i++) {
+            r.keepers[_keepers[i]] = true;
+        }
+        r.keeperArr = _keepers;
+        emit KeepersAddition(numKeepers);
+        return numKeepers++;
+    }
+
+    function newChannelWithHash(
+        vitetoken _erc20,
+        bytes32 _inputHash,
+        bytes32 _outputHash,
+        uint256 _keeperId
+    ) public returns (uint256) {
+        channels.push(
+            Channel({
+                inputId: 0,
+                inputHash: _inputHash,
+                outputId: 0,
+                outputHash: _outputHash,
+                erc20: _erc20,
+                keeperId:_keeperId
+            })
+        );
+        requireAndUpdateSpentHashes(_inputHash);
+        requireAndUpdateSpentHashes(_outputHash);
+        require(_keeperId<numKeepers, "keeperId required");
+
+        emit LogChannelsAddition(channels.length - 1, _erc20);
+        return channels.length;
+    }
+
+    function input(
+        uint256 id,
+        bytes calldata dest,
+        uint256 value
+    ) public payable override {
+        Channel memory channel = channels[id];
+
+		require(msg.value == value, "Transfer Value Require Failed.");
+		require(msg.token == channel.erc20, "Transfer Token Require Failed");
+
+        bytes32 nextHash = keccak256(
+            abi.encodePacked(channel.inputId, dest, value, channel.inputHash)
+        );
+
+        requireAndUpdateSpentHashes(nextHash);
+
+        emit Input(id, channel.inputId + 1, nextHash, dest, value, msg.sender);
+        channels[id].inputId = channel.inputId + 1;
+        channels[id].inputHash = nextHash;
+    }
+
+    function output(
+        uint256 id,
+        bytes32 outputHash,
+        address payable dest,
+        uint256 value
+    ) public override {
+        _output(id, outputHash, dest, value);
+    }
+
+     function _output(
+        uint256 id,
+        bytes32 outputHash,
+        address payable dest,
+        uint256 value
+    ) internal {
+        Channel memory channel = channels[id];
+
+        bytes32 nextHash = keccak256(
+            abi.encodePacked(channel.outputId, dest, value, channel.outputHash)
+        );
+        // bytes32 nextId = keccak256(abi.encodePacked(dest));
+        require(nextHash == outputHash, "hash verify failed");
+
+        approved(channel.keeperId, outputHash);
+
+        requireAndUpdateSpentHashes(nextHash);
+
+      	dest.transfer(channel.erc20, value);
+
+        emit Output(id, channel.outputId + 1, nextHash, dest, value);
+        channels[id].outputId = channel.outputId + 1;
+        channels[id].outputHash = nextHash;
+    }
+
+    function requireAndUpdateSpentHashes(bytes32 _hash) internal {
+        require(!spentHashes[_hash], "spent hash verify failed");
+        spentHashes[_hash] = true;
+    }
+
+    
+    event Approved(bytes32 outputHash);
+
+    function approved(uint256 keeperId, bytes32 outputHash) internal view {
+        require(keepers[keeperId].approvedCnt[outputHash]>=keepers[keeperId].threshold, "revert outputHash approved");
+    }
+
+    function approveOutput(uint256 keeperId, bytes32 outputHash) public {
+        _approveOutput(keeperId, outputHash);
+    }
+
+    function approveAndExecOutput(uint256 keeperId, uint256 id, bytes32 outputHash, address payable dest, uint256 value) public {
+        _approveOutput(keeperId, outputHash);
+        if(keepers[keeperId].approvedCnt[outputHash]<keepers[keeperId].threshold){
+            return;
+        }
+        if(spentHashes[outputHash]){
+            return;
+        }
+        _output(id, outputHash, dest, value);
+    }
+
+    function _approveOutput(uint256 keeperId, bytes32 outputHash) internal {
+        require(keepers[keeperId].keepers[msg.sender], "only keeper can approve");
+        require(keepers[keeperId].approvedKeepers[outputHash][msg.sender]==false, "only can approve once");
+
+        keepers[keeperId].approvedCnt[outputHash] = keepers[keeperId].approvedCnt[outputHash] + uint8(1);
+        keepers[keeperId].approvedKeepers[outputHash][msg.sender] = true;
+        emit Approved(outputHash);
+    }
+
+    function outputApproved(uint256 keeperId, bytes32 outputHash, address keeper) public view returns(bool){
+        return keepers[keeperId].approvedKeepers[outputHash][keeper];
+    }
 
 
+    // ------------------------
+
+    event InputProved(uint256 indexed channelId, bytes32 indexed inputHash,  bytes32 sigR, bytes32 sigS, uint8 sigV);
+
+    mapping(bytes32 => mapping(address => bool)) public inputProvedKeepers;
+
+    function proveInputHash(
+        uint8 sigV,
+        bytes32 sigR,
+        bytes32 sigS,
+        bytes32 inputHash,
+        uint256 channelId
+    ) public {
+        require(inputProvedKeepers[inputHash][msg.sender]==false, "only can approve once");
+
+        inputProvedKeepers[inputHash][msg.sender] = true;
+        emit InputProved(channelId, inputHash, sigR, sigS, sigV);
+    }
 }

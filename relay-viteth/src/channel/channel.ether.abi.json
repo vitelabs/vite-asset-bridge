@@ -2,11 +2,6 @@
   {
     "inputs": [
       {
-        "internalType": "contract IERC20",
-        "name": "_token",
-        "type": "address"
-      },
-      {
         "internalType": "contract IKeeper",
         "name": "_keeper",
         "type": "address"
@@ -21,13 +16,19 @@
       {
         "indexed": false,
         "internalType": "uint256",
+        "name": "channelId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
         "name": "index",
         "type": "uint256"
       },
       {
         "indexed": false,
         "internalType": "bytes32",
-        "name": "id",
+        "name": "inputHash",
         "type": "bytes32"
       },
       {
@@ -56,6 +57,31 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "contract IERC20",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "LogChannelsAddition",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "channelId",
+        "type": "uint256"
+      },
+      {
         "indexed": false,
         "internalType": "uint256",
         "name": "index",
@@ -64,7 +90,7 @@
       {
         "indexed": false,
         "internalType": "bytes32",
-        "name": "id",
+        "name": "outputHash",
         "type": "bytes32"
       },
       {
@@ -86,17 +112,42 @@
   {
     "inputs": [
       {
-        "internalType": "bytes32",
+        "internalType": "uint256",
         "name": "",
-        "type": "bytes32"
+        "type": "uint256"
       }
     ],
-    "name": "blockedOutputIds",
+    "name": "channels",
     "outputs": [
       {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
+        "internalType": "uint256",
+        "name": "inputId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "inputHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "outputId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "outputHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "contract IERC20",
+        "name": "erc20",
+        "type": "address"
+      },
+      {
+        "internalType": "contract IKeeper",
+        "name": "keeper",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -104,6 +155,11 @@
   },
   {
     "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
       {
         "internalType": "bytes",
         "name": "dest",
@@ -121,8 +177,19 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "inputIndex",
+    "inputs": [
+      {
+        "internalType": "contract IERC20",
+        "name": "_erc20",
+        "type": "address"
+      },
+      {
+        "internalType": "contract IKeeper",
+        "name": "_keeper",
+        "type": "address"
+      }
+    ],
+    "name": "newChannel",
     "outputs": [
       {
         "internalType": "uint256",
@@ -130,27 +197,53 @@
         "type": "uint256"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "keeper",
-    "outputs": [
-      {
-        "internalType": "contract IKeeper",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
       {
+        "internalType": "contract IERC20",
+        "name": "_erc20",
+        "type": "address"
+      },
+      {
+        "internalType": "contract IKeeper",
+        "name": "_keeper",
+        "type": "address"
+      },
+      {
         "internalType": "bytes32",
+        "name": "_inputHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "_outputHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "newChannelWithHash",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "outputHash",
         "type": "bytes32"
       },
       {
@@ -170,49 +263,10 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "outputIndex",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "prevInputId",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "prevOutputId",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "bytes32",
-        "name": "id",
+        "name": "_hash",
         "type": "bytes32"
       }
     ],
@@ -228,13 +282,19 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "token",
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "spentHashes",
     "outputs": [
       {
-        "internalType": "contract IERC20",
+        "internalType": "bool",
         "name": "",
-        "type": "address"
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
