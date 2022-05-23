@@ -46,8 +46,13 @@
         "type": "bytes32[]"
       },
       {
+        "internalType": "uint256",
+        "name": "channelId",
+        "type": "uint256"
+      },
+      {
         "internalType": "bytes32",
-        "name": "id",
+        "name": "outputHash",
         "type": "bytes32"
       },
       {
@@ -61,8 +66,8 @@
         "type": "uint256"
       },
       {
-        "internalType": "contract IChannel",
-        "name": "channel",
+        "internalType": "contract IVault",
+        "name": "vault",
         "type": "address"
       }
     ],
@@ -121,6 +126,25 @@
       }
     ],
     "name": "approvedIds",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "addr",
+        "type": "address"
+      }
+    ],
+    "name": "isKeeper",
     "outputs": [
       {
         "internalType": "bool",

@@ -9,19 +9,48 @@ async function deployContract(name, args) {
   return contractIns;
 }
 
+
+async function attach(contract, address) {
+  const factory = await ethers.getContractFactory(contract);
+  return await factory.attach(address);
+}
+
 async function deploy() {
-  const keeper = await deployContract("KeeperMultiSig", [
-    cfg.keepers,
-    cfg.threshold,
-  ]);
+  // const keeper = await deployContract("KeeperMultiSig", [
+  //   cfg.keepers,
+  //   cfg.threshold,
+  // ]);
+  // console.log("keeper deployed", keeper.address);
 
-  const channel = await deployContract("ChannelERC20", [
-    cfg.erc20,
-    keeper.address,
-  ]);
+  const erc20 = await attach("ERC20Token", cfg.erc20);
 
-  console.log("keeper address:", keeper.address);
-  console.log("channel address:", channel.address);
+  // const vault = await deployContract("Vault", [keeper.address]);
+
+  // console.log("vault deployed", vault.address);
+  // await vault.newChannel(erc20.address, keeper.address, {});
+
+  console.log("vault new channel success");
+  const channelId = 1;
+  // keeper deployed 0x0d090D438bA8F9e2380b0eFe687634361caD402F
+  // vault deployed 0x6b90e3F5B0E2f4F2ec0872bE66955055eE3F72b2
+
+  const vault = await attach("Vault", "0x6b90e3F5B0E2f4F2ec0872bE66955055eE3F72b2")
+
+  const channel = await vault.channels(channelId);
+  console.log(channel);
+
+  // const result = {
+  //   keeper: keeper.address,
+  //   vault: vault.address,
+  //   erc20: erc20.address,
+  //   channelId: channelId,
+  //   channelInputHash: channel.inputHash,
+  //   channelOutputHash: channel.outputHash
+  // };
+  // console.log("result: ", JSON.stringify(result));
+
+
+  await erc20.mint(vault.address, ethers.utils.parseEther("10000"));
 }
 
 async function main() {

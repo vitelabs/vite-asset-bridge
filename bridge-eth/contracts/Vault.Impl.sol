@@ -25,6 +25,7 @@ contract Vault is IVault {
 
     event LogChannelsAddition(uint256 indexed id, IERC20 indexed token);
     event Input(
+        uint256 channelId,
         uint256 index,
         bytes32 inputHash,
         bytes dest,
@@ -32,6 +33,7 @@ contract Vault is IVault {
         address from
     );
     event Output(
+        uint256 channelId,
         uint256 index,
         bytes32 outputHash,
         address dest,
@@ -122,7 +124,7 @@ contract Vault is IVault {
 
         requireAndUpdateSpentHashes(nextHash);
 
-        emit Input(channel.inputId + 1, nextHash, dest, value, msg.sender);
+        emit Input(id, channel.inputId + 1, nextHash, dest, value, msg.sender);
         channels[id].inputId = channel.inputId + 1;
         channels[id].inputHash = nextHash;
     }
@@ -159,7 +161,7 @@ contract Vault is IVault {
             SafeERC20.safeTransfer(channel.erc20, dest, value);
         }
 
-        emit Output(channel.outputId + 1, nextHash, dest, value);
+        emit Output(id, channel.outputId + 1, nextHash, dest, value);
         channels[id].outputId = channel.outputId + 1;
         channels[id].outputHash = nextHash;
     }
@@ -171,6 +173,10 @@ contract Vault is IVault {
     function requireAndUpdateSpentHashes(bytes32 _hash) internal {
         require(!spentHashes[_hash], "spent hash verify failed");
         spentHashes[_hash] = true;
+    }
+
+    function channelsLength() public view returns (uint256) {
+        return channels.length;
     }
 
     receive() external payable {}

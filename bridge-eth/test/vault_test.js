@@ -88,7 +88,7 @@ describe("Vault Inputs Outputs", function () {
     await erc20.approve(vault.address, value);
     await expect(vault.input(1, dest, value))
       .to.emit(vault, "Input")
-      .withArgs(1, id, ethers.utils.hexlify(dest), value, account1.address);
+      .withArgs(1, 1, id, ethers.utils.hexlify(dest), value, account1.address);
 
     const balance = await erc20.balanceOf(vault.address);
 
@@ -222,6 +222,7 @@ async function input(sender, vault, channelId, input) {
   await expect(vault.input(channelId, destOriginHex, value))
     .to.emit(vault, "Input")
     .withArgs(
+      1,
       +inputId + 1,
       inputHash,
       ethers.utils.hexlify(destOriginHex),
@@ -268,7 +269,7 @@ async function approveAndExecOutput(_keeper, vault, channelId, _output, decimalD
     .to.emit(_keeper, "Approved")
     .withArgs(_output.hash)
     .to.emit(vault, "Output")
-    .withArgs(+channel.outputId + 1, _output.hash, _output.dest, scaledValue);
+    .withArgs(1, +channel.outputId + 1, _output.hash, _output.dest, _output.value);
 
 
     const afterBalance = await erc20.balanceOf(vault.address);

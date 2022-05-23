@@ -2,26 +2,10 @@
 // ---------
 import * as utils from "../utils/utils";
 import { ethers } from "ethers";
-import { newEtherProvider, privateKey } from "./common";
+import { newEtherProvider, privateKey, StoredLogIndex, LogEvent,InputEvent,logCompare } from "./common";
 import _channelAbi from "./channel.ether.abi.json";
 import _keeperAbi from "./keeper.ether.abi.json";
 
-interface ConfirmedInfo {
-  height: string;
-  txIndex: number;
-  logIndex: number;
-
-  index: string;
-}
-
-interface Input {
-  id: string;
-  index: string;
-
-  height: number;
-  txIndex: number;
-  logIndex: number;
-}
 
 const ETH_INFO_PATH_PREFIX = ".channel_ether/info";
 
@@ -42,9 +26,9 @@ export class ChannelEther {
   signer: ethers.Wallet;
 
   fromBlockHeight: string;
+  submitSigs: boolean;
 
-
-  confirmedThreshold:number;
+  confirmedThreshold: number;
   constructor(cfg: any, dataDir: string) {
     this.etherChannelAbi = _channelAbi;
     this.etherKeeperAbi = _keeperAbi;
@@ -73,6 +57,7 @@ export class ChannelEther {
     this.etherKeeperThreshold = 100000;
     this.signer = new ethers.Wallet(this.signerKey, this.etherProvider);
     this.confirmedThreshold = cfg.confirmedThreshold;
+    this.submitSigs = cfg.submitSigs;
   }
 
   async init() {
@@ -88,13 +73,38 @@ export class ChannelEther {
     return info;
   }
 
-  updateInfo(prefix: string, info: any) {
+  private updateInfo(prefix: string, info: any) {
     utils.writeJson(this.infoPath + prefix, JSON.stringify(info));
   }
 
-  async scanConfirmedInputs(fromHeight: string) {
-    if (fromHeight === "0") {
-      fromHeight = this.fromBlockHeight;
+  saveConfirmedInputs(storedIndex: StoredLogIndex) {
+    this.updateInfo("_confirmed", storedIndex);
+  }
+
+  filterAndSortInput(info: LogEvent, inputs: InputEvent[]): InputEvent[] {
+    const filteredInputs = inputs.filter((x: any) => {
+      return logCompare(x, info) > 0;
+    });
+
+    return filteredInputs.sort(logCompare);
+  }
+
+  checkInputIndex(input: InputEvent, storedInputs: StoredLogIndex): boolean {
+    const storedIndex = storedInputs.inputsIndex[input.channelId];
+    if (!storedIndex && input.index === 1) {
+      return true;
+    }
+    if (storedIndex && input.index === storedIndex + 1) {
+      return true;
+    }
+    return false;
+  }
+
+  async scanConfirmedInputs(
+    fromHeight: number
+  ): Promise<{ toHeight: number; events: InputEvent[] }> {
+    if (fromHeight === 0) {
+      fromHeight = +this.fromBlockHeight;
     }
     const current = await this.etherProvider.getBlockNumber();
 
@@ -116,23 +126,25 @@ export class ChannelEther {
 
     const inputs = await this.etherChannelContract.queryFilter(
       filterInput,
-      +fromHeight,
+      fromHeight,
       +toHeight.toString()
     );
 
     if (!inputs || inputs.length === 0) {
-      return { toHeight, inputs: [] };
+      return { toHeight: +toHeight.toString(), events: [] };
     }
     return {
-      toHeight,
-      inputs: inputs.map((input: any) => {
+      toHeight: +toHeight.toString(),
+      events: inputs.map((input: any) => {
         return {
-          inputHash: input.args.inputHash,
-          index: input.args.index,
-          height: input.blockNumber,
+          height: +input.blockNumber,
           txIndex: input.transactionIndex,
           logIndex: input.logIndex,
-          event: input.args,
+          channelId: input.args.channelId.toString(),
+          index: +input.args.index.toString(),
+          inputHash: input.args.inputHash,
+          dest: input.args.dest,
+          value: input.args.value.toString(),
         };
       }),
     };
@@ -147,7 +159,9 @@ export class ChannelEther {
     const signature = ethers.utils.joinSignature(expandedSig);
     const recoveredAddress = ethers.utils.recoverAddress(msg, signature);
     // console.log("keeper", recoveredAddress);
-    return this.etherKeeperContract.keepers(recoveredAddress);
+    const result = await this.etherKeeperContract.keepers(recoveredAddress);
+    console.log("recovered address", recoveredAddress, result);
+    return result;
   }
 
   async approveId(msg: string, events: any[]) {
@@ -157,7 +171,7 @@ export class ChannelEther {
       sigs.push(Object.assign(sig, { address: address }));
     });
 
-    sigs.sort(function(a, b) {
+    sigs.sort(function (a, b) {
       if (a.address < b.address) return -1;
       if (a.address > b.address) return 1;
       return 0;
@@ -173,18 +187,20 @@ export class ChannelEther {
   }
 
   async approveAndExecOutput(
+    channelId: string,
     msg: string,
     events: any[],
     dest: string,
     value: string
   ) {
+    console.log(msg, events);
     let sigs: any[] = [];
     events.forEach((sig) => {
       const address = ethers.utils.recoverAddress(msg, sig);
       sigs.push(Object.assign(sig, { address: address }));
     });
 
-    sigs.sort(function(a, b) {
+    sigs.sort(function (a, b) {
       if (a.address < b.address) return -1;
       if (a.address > b.address) return 1;
       return 0;
@@ -194,12 +210,17 @@ export class ChannelEther {
     const vArr = sigs.map((s) => s.v);
     const sArr = sigs.map((s) => s.s);
 
+    console.log(this.signer.address,"----------");
+    
+    console.log(channelId, msg, dest, value,"----------",await this.prevOutputId(channelId));
+
     await this.etherKeeperContract
       .connect(this.signer)
       .approveAndExecOutput(
         vArr,
         rArr,
         sArr,
+        channelId,
         msg,
         dest,
         value,
@@ -224,8 +245,12 @@ export class ChannelEther {
     return this.etherChannelContract.outputIndex();
   }
 
-  async prevOutputId() {
-    return this.etherChannelContract.prevOutputId();
+  async prevOutputId(channelId:string) {
+    return this.etherChannelContract.channels(channelId);
+  }
+
+  async approved(inputHash:string){
+    return this.etherKeeperContract.approvedIds(inputHash);
   }
 
   async token() {

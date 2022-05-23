@@ -28,26 +28,26 @@ export function newEtherProvider(cfg: EndpointCfg) {
 }
 
 export function privateKey(cfg: any) {
-  if (!cfg.address) {
-    throw new Error("error account.address");
-  }
+  // if (!cfg.address) {
+  //   throw new Error("error account.address");
+  // }
   if (cfg.mnemonic) {
-    if (!cfg.index) {
+    if (cfg.index === undefined) {
       throw new Error("error mnemonic index");
     }
 
     const path = `m/44'/60'/0'/0/${cfg.index}`;
     const wallet = ethers.Wallet.fromMnemonic(cfg.mnemonic, path);
-    if (wallet.address != cfg.address) {
-      throw new Error(`error address:${cfg.address},${wallet.address}`);
-    }
+    // if (wallet.address != cfg.address) {
+    //   throw new Error(`error address:${cfg.address},${wallet.address}`);
+    // }
     return wallet.privateKey;
   }
   if (cfg.privateKey) {
     const wallet = new ethers.Wallet(cfg.privateKey);
-    if (wallet.address != cfg.address) {
-      throw new Error(`error address:${cfg.address},${wallet.address}`);
-    }
+    // if (wallet.address != cfg.address) {
+    //   throw new Error(`error address:${cfg.address},${wallet.address}`);
+    // }
     return wallet.privateKey;
   }
   throw new Error("error account");
@@ -106,10 +106,61 @@ export function toJobs(
 ): Map<string, ChannelOptions> {
   const jobs = new Map<string, ChannelOptions>();
   for (const option of options) {
-    if (option.from.network != "ether" || option.to.network != "vite") {
+    if (option.from.network != from || option.to.network != to) {
       throw new Error(`error workflow options`);
     }
     jobs.set(option.from.channelId, option.to);
   }
   return jobs;
+}
+
+
+
+export interface LogEvent {
+  height: number;
+  txIndex: number;
+  logIndex: number;
+}
+export interface InputEvent extends LogEvent {
+  channelId: string;
+  index: number;
+  inputHash: string;
+  dest: string;
+  value: string;
+}
+
+export interface StoredLogIndex extends LogEvent {
+  inputsIndex: { [k: string]: number };
+}
+
+export function logCompare(x: LogEvent, y: LogEvent): number {
+  if (x.height < y.height) {
+    return -1;
+  } else if (x.height > y.height) {
+    return 1;
+  }
+
+  if (x.txIndex < y.txIndex) {
+    return -1;
+  } else if (x.txIndex > y.txIndex) {
+    return 1;
+  }
+
+  if (x.logIndex < y.logIndex) {
+    return -1;
+  } else if (x.logIndex > y.logIndex) {
+    return 1;
+  }
+  return 0;
+}
+
+export function checkInputIndex(input: InputEvent, storedInputs: StoredLogIndex): boolean {
+  const storedIndex = storedInputs.inputsIndex[input.channelId];
+  if (!storedIndex && input.index === 1) {
+    return true;
+  }
+  if (storedIndex && input.index === storedIndex + 1) {
+    return true;
+  }
+  return false;
 }

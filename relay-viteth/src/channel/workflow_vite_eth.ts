@@ -1,6 +1,16 @@
-import { ChannelVite, confirmed as txConfirmed } from "./channelVite";
+import {
+  ChannelVite,
+  confirmed as txConfirmed,
+  ViteProvedEvent,
+} from "./channelVite";
 import { ChannelEther } from "./channelEther";
-import { WorkflowOptions, ChannelOptions, toJobs } from "./common";
+import {
+  WorkflowOptions,
+  ChannelOptions,
+  toJobs,
+  StoredLogIndex,
+  checkInputIndex,
+} from "./common";
 
 export class WorkflowViteEth {
   channelVite: ChannelVite;
@@ -18,11 +28,13 @@ export class WorkflowViteEth {
   }
 
   async step1() {
-    let info = await this.channelVite.getInfo("_confirmed");
+    let info = (await this.channelVite.getInfo("_confirmed")) as StoredLogIndex;
     if (!info) {
       info = {
-        height: "0",
-        index: "0",
+        height: 0,
+        txIndex: -1,
+        logIndex: -1,
+        inputsIndex: {},
       };
     }
 
@@ -30,16 +42,22 @@ export class WorkflowViteEth {
       info.height
     );
 
+    console.log(
+      "[vite->eth]",
+      `height: ${info.height}->${toHeight}`,
+      `scan input result:`,
+      events
+    );
+
     if (!events || events.length === 0) {
       return;
     }
     const input = events[0];
-
     {
       // check input tx confirmed
       const isConfirmed = await txConfirmed(
         this.channelVite.viteProvider,
-        input.hash,
+        input.accountBlockHash,
         this.channelVite.confirmedThreshold
       );
 
@@ -47,40 +65,74 @@ export class WorkflowViteEth {
         return;
       }
     }
-    console.log(input);
+    console.log("[vite->eth]", "unconfirmed input", input);
 
-    if (input.event.index != (BigInt(info.index) + 1n).toString()) {
-      console.warn("index not match", info.index, input.event.index);
+    const ethChannelId = this.jobs.get(input.channelId.toString())?.channelId;
+    if (!ethChannelId) {
+      console.log(
+        "[vite->eth]",
+        "eth channel id not exist.",
+        input.channelId.toString(),
+        ethChannelId
+      );
       return;
     }
 
-    const sig = await this.channelEther.signId("0x" + input.event.inputHash);
+    if (!checkInputIndex(input, info)) {
+      console.warn(
+        "[vite->eth] index do not match",
+        input.index,
+        info.inputsIndex[input.channelId]
+      );
+      return;
+    }
+
+    const sig = await this.channelEther.signId("0x" + input.inputHash);
 
     const proved = await this.channelVite.inputProvedKeepers(
-      input.event.inputHash,
+      input.inputHash,
       this.channelVite.signerAddress
     );
     if (proved && proved[0] === "1") {
       console.log(
-        `input proved [${input.event.index}] [${input.event.inputHash}]`,
+        `[vite->eth] input proved [${input.index}] [${input.inputHash}]`,
         proved
       );
     } else {
-      await this.channelVite.proveInputId(sig.v, sig.r, sig.s, input.event.id);
+      console.log(
+        `[vite->eth] prove input [${input.index}] [${input.inputHash}]`
+      );
+      await this.channelVite.proveInputHash(
+        sig.v,
+        sig.r,
+        sig.s,
+        input.inputHash,
+        input.channelId 
+      );
     }
 
-    await this.channelVite.updateInfo("_confirmed", {
+    info.inputsIndex[input.channelId] = input.index;
+    await this.channelVite.saveConfirmedInputs({
       height: input.height,
-      index: input.event.index,
+      txIndex: -1,
+      logIndex: -1,
+      inputsIndex: info.inputsIndex,
     });
+    return;
   }
 
   async step2() {
-    let info = await this.channelVite.getInfo("_submit");
+    console.log("[vite->eth] step2 submit sigs", this.channelEther.submitSigs);
+    if (!this.channelEther.submitSigs) {
+      return;
+    }
+    let info = (await this.channelVite.getInfo("_submit")) as StoredLogIndex;
     if (!info) {
       info = {
-        height: "0",
-        index: "0",
+        height: 0,
+        logIndex: -1,
+        txIndex: -1,
+        inputsIndex: {},
       };
     }
 
@@ -90,51 +142,81 @@ export class WorkflowViteEth {
       return;
     }
 
+    // new input happened
     const input = events[0];
-    console.log(input);
-    if (input.event.index != (BigInt(info.index) + 1n).toString()) {
+    const ethChannelId = this.jobs.get(input.channelId.toString())?.channelId;
+    if(!ethChannelId){
+      console.log("[vite->eth] eth channel id not exist", ethChannelId);
       return;
     }
+    if (!checkInputIndex(input, info)) {
+      return;
+    }
+    
+    console.log(events);
 
+    // scan new input proved
     const proved = await this.channelVite.scanInputProvedEvents(info.height);
-    console.log(proved);
-    const provedEvents = await proved.events
-      .filter((x: any) => {
-        return x.event.inputHash === input.event.inputHash;
+
+    const inputProvedEvents = await proved.events.filter(
+      (x: ViteProvedEvent) => {
+        return x.inputHash === input.inputHash;
+      }
+    );
+
+    const provedEvents = (
+      await Promise.all(
+        inputProvedEvents.map(async (event: ViteProvedEvent) => {
+          const isKeeper = await this.channelEther.isKeeper(
+            "0x" + event.inputHash,
+            "0x" + event.sigR,
+            "0x" + event.sigS,
+            event.sigV
+          );
+          return { event, isKeeper: isKeeper };
+        })
+      )
+    )
+      .filter((x: { event: ViteProvedEvent; isKeeper: boolean }) => {
+        return x.isKeeper;
       })
-      .filter(async (x: any) => {
-        return await this.channelEther.isKeeper(
-          "0x" + x.event.inputHash,
-          "0x" + x.event.sigR,
-          "0x" + x.event.sigS,
-          x.event.sigV
-        );
-      });
+      .map((x: { event: ViteProvedEvent; isKeeper: boolean }) => x.event);
 
     if (provedEvents.length < this.channelEther.etherKeeperThreshold) {
       return;
     }
+    
 
-    console.log("ether approve id:", input.event.inputHash);
-    console.log("approve input", JSON.stringify(provedEvents));
-    await this.channelEther.approveAndExecOutput(
-      "0x" + input.event.inputHash,
-      provedEvents
-        .slice(0, this.channelEther.etherKeeperThreshold)
-        .map((x: any) => {
-          return {
-            r: "0x" + x.event.sigR,
-            s: "0x" + x.event.sigS,
-            v: x.event.sigV,
-          };
-        }),
-      "0x" + input.event.dest,
-      input.event.value
-    );
+    
 
-    await this.channelVite.updateInfo("_submit", {
+    if (await this.channelEther.approved("0x" + input.inputHash)) {
+      console.log("[vite->eth]input hash approved in eth chain.");
+    } else {
+      console.log("[vite->eth]ether approve id:", input.inputHash);
+      console.log("[vite->eth]approve input", JSON.stringify(provedEvents));
+      await this.channelEther.approveAndExecOutput(
+        ethChannelId,
+        "0x" + input.inputHash,
+        provedEvents
+          .slice(0, this.channelEther.etherKeeperThreshold)
+          .map((x:ViteProvedEvent) => {
+            return {
+              r: "0x" + x.sigR,
+              s: "0x" + x.sigS,
+              v: x.sigV,
+            };
+          }),
+        "0x" + input.dest,
+        input.value
+      );
+    }
+
+    info.inputsIndex[input.channelId] = input.index;
+    await this.channelVite.saveSubmitInputs({
       height: input.height,
-      index: input.event.index,
+      logIndex: -1,
+      txIndex: -1,
+      inputsIndex: info.inputsIndex,
     });
   }
 }

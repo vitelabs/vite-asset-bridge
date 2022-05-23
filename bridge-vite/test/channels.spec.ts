@@ -364,11 +364,13 @@ async function input(
     });
     expect(events.map((event: any) => event.returnValues)).to.be.deep.equal([
       {
-        "0": (+prevInputId + 1).toString(),
-        "1": inputHash.replace("0x",""),
-        "2": input.dest.replace("0x", ""),
-        "3": input.value,
-        "4": fromAddress,
+        "0": channelId,
+        "1": (+prevInputId + 1).toString(),
+        "2": inputHash.replace("0x",""),
+        "3": input.dest.replace("0x", ""),
+        "4": input.value,
+        "5": fromAddress,
+        channelId: channelId,
         index: (+prevInputId + 1).toString(),
         inputHash: inputHash.replace("0x",""),
         dest: input.dest.replace("0x", ""),

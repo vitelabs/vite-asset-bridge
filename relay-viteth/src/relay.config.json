@@ -7,8 +7,8 @@
       "mnemonic": "turtle siren orchard alpha indoor indicate wasp such waste hurt patient correct true firm goose elegant thunder torch hurt shield taste under basket burger",
       "index": 0
     },
-    "confirmedThreshold": 70
-
+    "confirmedThreshold": 70,
+    "keeperId": 0
   },
   "ether": {
     "channelAddress": "0x2FE56DB3F21815Ab26828debC175aB08D91CF81D",
@@ -23,7 +23,8 @@
       "mnemonic": "turtle siren orchard alpha indoor indicate wasp such waste hurt patient correct true firm goose elegant thunder torch hurt shield taste under basket burger",
       "index": 0
     },
-    "confirmedThreshold": 10
+    "confirmedThreshold": 10,
+    "submitSigs": true
   },
   "channels": [
     [
