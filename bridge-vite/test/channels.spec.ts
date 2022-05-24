@@ -1,13 +1,13 @@
 import { expect } from "chai";
 // import { beforeEach, it } from "mocha";
-const vuilder = require("@vite/vuilder");
+import * as vuilder from "@vite/vuilder";
 import config from "./vite.config.json";
 import accounts from "./data/accounts.json";
 import { ethers } from "ethers";
 import assert from "assert";
 
 let provider: any;
-let deployer: any;
+let deployer: vuilder.UserAccount;
 let vault: any;
 
 const tokenId = "tti_5649544520544f4b454e6e40";
@@ -34,7 +34,7 @@ describe("test Vault", () => {
     console.log("deployer", deployer.address);
 
     for (let i = 0; i < addressArr.length; i++) {
-      await deployer.send({ toAddress: addressArr[i] }).autoSend();
+      await deployer.send({ toAddress: addressArr[i], tokenId: "tti_5649544520544f4b454e6e40", amount: "0", data: "" }).autoSend();
     }
     await Promise.all([
       keepers[0].receiveAll(),
@@ -368,13 +368,13 @@ async function input(
       {
         "0": channelId,
         "1": (+prevInputId + 1).toString(),
-        "2": inputHash.replace("0x",""),
+        "2": inputHash.replace("0x", ""),
         "3": input.dest.replace("0x", ""),
         "4": input.value,
         "5": fromAddress,
         channelId: channelId,
         index: (+prevInputId + 1).toString(),
-        inputHash: inputHash.replace("0x",""),
+        inputHash: inputHash.replace("0x", ""),
         dest: input.dest.replace("0x", ""),
         value: input.value,
         from: fromAddress,
@@ -386,7 +386,7 @@ async function input(
     JSON.stringify([+prevInputId + 1, inputHash, input.dest, input.value])
   );
 
-  const afterBalance = BigInt( (await provider.getBalanceInfo(vault.address)).balance.balanceInfoMap[tokenId].balance);
+  const afterBalance = BigInt((await provider.getBalanceInfo(vault.address)).balance.balanceInfoMap[tokenId].balance);
   // console.log(beforeBalance, afterBalance);
 
   assert.equal((afterBalance - beforeBalance).toString(), input.value.toString());

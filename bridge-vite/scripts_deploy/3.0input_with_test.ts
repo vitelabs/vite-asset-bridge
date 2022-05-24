@@ -1,5 +1,5 @@
 import { expect } from "chai";
-const vuilder = require("@vite/vuilder");
+import * as vuilder from "@vite/vuilder";
 import config from "./deploy.config.json";
 import inputCfg from "./input.config.json";
 import vaultCfg from "./contract.config.json";

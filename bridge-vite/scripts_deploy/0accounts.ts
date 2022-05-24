@@ -1,4 +1,4 @@
-const vuilder = require("@vite/vuilder");
+import * as vuilder from "@vite/vuilder";
 import config from "./keepers.config.json";
 
 
