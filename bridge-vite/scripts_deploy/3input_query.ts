@@ -1,4 +1,4 @@
-const vuilder = require("@vite/vuilder");
+import * as vuilder from "@vite/vuilder";
 import { expect } from "chai";
 import config from "./deploy.config.json";
 import contractCfg from "./contract.config.json";

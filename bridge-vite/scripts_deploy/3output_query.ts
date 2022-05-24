@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { ViteAPI, abi as abiUtils } from "@vite/vitejs";
-const vuilder = require("@vite/vuilder");
+import * as vuilder from "@vite/vuilder";
 import config from "./deploy.config.json";
 import channelCfg from "./channel.config.json";
 import contractCfg from "./contract.config.json";
