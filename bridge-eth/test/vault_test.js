@@ -183,9 +183,9 @@ describe("Vault Inputs Outputs", function () {
 
     let sum1;
     if (decimalDiff < 0) {
-      sum1 = sum.mul(10 ** (-decimalDiff));
+      sum1 = sum.div(10 ** (-decimalDiff));
     } else {
-      sum1 = sum.div(10 ** decimalDiff);
+      sum1 = sum.mul(10 ** decimalDiff);
     }
 
     await erc20.mint(vault.address, sum1);
@@ -252,7 +252,7 @@ async function approveAndExecOutput(_keeper, vault, channelId, _output, decimalD
   // expect(nextOutputHash).to.be.equal(_output.hash);
   // console.log(_output.hash,_output.dest);
   const beforeBalance = await erc20.balanceOf(vault.address);
-  let scaledValue = decimalDiff < 0 ? _output.value.mul(10 ** (-decimalDiff)) : _output.value.div(10 ** (decimalDiff));
+  let scaledValue = decimalDiff < 0 ? _output.value.div(10 ** (-decimalDiff)) : _output.value.mul(10 ** (decimalDiff));
 
   await expect(
     _keeper.approveAndExecOutput(
@@ -269,8 +269,7 @@ async function approveAndExecOutput(_keeper, vault, channelId, _output, decimalD
     .to.emit(_keeper, "Approved")
     .withArgs(_output.hash)
     .to.emit(vault, "Output")
-    .withArgs(1, +channel.outputId + 1, _output.hash, _output.dest, _output.value);
-
+    .withArgs(1, +channel.outputId + 1, _output.hash, _output.dest, scaledValue);
 
     const afterBalance = await erc20.balanceOf(vault.address);
     // console.log(afterBalance.toString(), beforeBalance.toString(), _output.value.toString());

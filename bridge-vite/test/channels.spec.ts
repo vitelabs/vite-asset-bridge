@@ -306,7 +306,7 @@ async function output(
     }
   );
 
-  let scaledValue = decimalDiff < 0 ? parseInt(output.value) * (Math.pow(10, -decimalDiff)) : parseInt(output.value) / (Math.pow(10, decimalDiff));
+  let scaledValue = decimalDiff < 0 ? parseInt(output.value) / (Math.pow(10, -decimalDiff)) : parseInt(output.value) * (Math.pow(10, decimalDiff));
 
   {
     // expect Approved event
@@ -316,11 +316,13 @@ async function output(
     });
     expect(events.map((event: any) => event.returnValues)).to.be.deep.equal([
       {
-        "0": (+outputId + 1).toString(),
-        "1": output.hash.replace("0x", ""),
-        "2": output.dest,
-        "3": scaledValue.toString(),
+        "0": "0",
+        "1": (+outputId + 1).toString(),
+        "2": output.hash.replace("0x", ""),
+        "3": output.dest,
+        "4": scaledValue.toString(),
 
+        channelId: "0",
         index: (+outputId + 1).toString(),
         outputHash: output.hash.replace("0x", ""),
         dest: output.dest,
@@ -384,7 +386,7 @@ async function input(
     JSON.stringify([+prevInputId + 1, inputHash, input.dest, input.value])
   );
 
-  const afterBalance =BigInt( (await provider.getBalanceInfo(vault.address)).balance.balanceInfoMap[tokenId].balance);
+  const afterBalance = BigInt( (await provider.getBalanceInfo(vault.address)).balance.balanceInfoMap[tokenId].balance);
   // console.log(beforeBalance, afterBalance);
 
   assert.equal((afterBalance - beforeBalance).toString(), input.value.toString());

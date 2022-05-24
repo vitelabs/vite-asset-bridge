@@ -5,10 +5,13 @@ The bridge is permissionless, security-focused, low cost and user-friendly.
 
 ## Currently Supported
 ### blockchain networks
-VITE, Ethereum, BSC
+- VITE
+- Ethereum
+- BSC
 
 ### Cryptocurrency Tokens
-VITE, USDV
+- VITE
+- USDV
 
 ## Quick Access
 Walk-through [bridge-buidl](https://bridge-buidl.vite.net/) 

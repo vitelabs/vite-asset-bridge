@@ -149,7 +149,7 @@ contract Vault is IVault {
 
         int8 decimalDiff = channel.decimalDiff;
         uint8 decimalDiffAbs = abs(decimalDiff);
-        if (decimalDiff <= 0) {
+        if (decimalDiff > 0) {
             value = value * (10 ** decimalDiffAbs);
         } else {
             value = value / (10 ** decimalDiffAbs);
