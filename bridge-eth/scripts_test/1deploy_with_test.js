@@ -23,7 +23,7 @@ async function deploy() {
 
   const erc20 = await deployContract("ERC20Token", ["TTT", "TTTT"]);
 
-  const decimalDiff = 2; 
+  const decimalDiff = 0; 
   const minValue = "100000000000000000" 
   const maxValue = "10000000000000000000";
   const channelId = 1;

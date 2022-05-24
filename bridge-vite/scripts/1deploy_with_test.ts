@@ -10,7 +10,7 @@ const addressArr = [
   "vite_10930bed5611218376df608b976743fa3127b5f008e8f27f83",
 ];
 const threshold = "3";
-const decimalDiff = -2;
+const decimalDiff = 0;
 const minValue = "100000000000000000";
 const maxValue = "10000000000000000000";
 
