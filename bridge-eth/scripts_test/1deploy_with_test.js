@@ -2,6 +2,10 @@ const cfg = require("./1deploy.config.json");
 const hre = require("hardhat");
 const ethers = hre.ethers;
 
+const ethDecimalDiff = 0;
+const ethMinValue = "100000000000000000" // 0.1
+const ethMaxValue = "10000000000000000000"; // 10
+
 async function deployContract(name, args) {
   let contractMode = await ethers.getContractFactory(name);
   let contractIns = await contractMode.deploy(...args);
@@ -15,13 +19,16 @@ async function deploy() {
     cfg.threshold,
   ]);
 
-  const vault = await deployContract("Vault", [keeper.address]);
+  const vault = await deployContract("Vault", [keeper.address, ethDecimalDiff, ethMinValue, ethMaxValue]);
 
   const erc20 = await deployContract("ERC20Token", ["TTT", "TTTT"]);
 
-  await vault.newChannel(erc20.address, keeper.address, {});
-
+  const decimalDiff = 0; 
+  const minValue = "100000000000000000" 
+  const maxValue = "10000000000000000000";
   const channelId = 1;
+
+  await vault.newChannel(erc20.address, keeper.address, decimalDiff, minValue , maxValue, {});
 
   const channel = await vault.channels(channelId);
 

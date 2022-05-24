@@ -36,10 +36,11 @@ def blockRun(cmd, cwd):
 
 
 def backgroundRunRelay(index, submitted):
+    log = open("testing-integration/data." + str(index) + "/stdout", "wb")
     runFp = subprocess.Popen(
         ["/bin/bash", "-c", "npx ts-node scripts/workflow_with_test.ts"],
         shell=False,
-        stdout=subprocess.DEVNULL,
+        stdout=log,
         stderr=subprocess.STDOUT,
         cwd="./relay-viteth",
         env={
@@ -106,7 +107,10 @@ blockRun("npx ts-node scripts/2input_with_test.ts", "./bridge-vite")
 print("vite input done.")
 
 print("relay 0 run")
-fp0 = backgroundRunRelay(0, 1)
+fp0 = backgroundRunRelay(
+    0,
+    1,
+)
 print("relay 1 run")
 fp1 = backgroundRunRelay(1, 0)
 print("relay 2 run")

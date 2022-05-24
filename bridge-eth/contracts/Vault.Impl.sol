@@ -11,6 +11,10 @@ struct Channel {
     bytes32 inputHash;
     uint256 outputId;
     bytes32 outputHash;
+
+    int8 decimalDiff; // decimal - oppositeDecimal
+    uint256 minValue;
+    uint256 maxValue;
     IERC20 erc20;
     IKeeper keeper;
 }
@@ -36,15 +40,15 @@ contract Vault is IVault {
         uint256 value
     );
 
-    constructor(IKeeper _keeper) {
-        newChannel(IERC20(0x00), _keeper);
+    constructor(IKeeper _keeper, int8 _decimalDiff, uint256 _minValue, uint256 _maxValue) {
+        newChannel(IERC20(0x00), _keeper, _decimalDiff, _minValue, _maxValue);
     }
 
     function spent(bytes32 _hash) public view override returns (bool) {
         return spentHashes[_hash];
     }
 
-    function newChannel(IERC20 _erc20, IKeeper _keeper)
+    function newChannel(IERC20 _erc20, IKeeper _keeper, int8 _decimalDiff, uint256 _minValue, uint256 _maxValue)
         public
         override
         returns (uint256)
@@ -56,14 +60,17 @@ contract Vault is IVault {
             abi.encodePacked(uint256(1), block.number, channels.length, _erc20)
         );
 
-        return newChannelWithHash(_erc20, _keeper, _inputHash, _outputHash);
+        return newChannelWithHash(_erc20, _keeper, _inputHash, _outputHash, _decimalDiff, _minValue, _maxValue);
     }
 
     function newChannelWithHash(
         IERC20 _erc20,
         IKeeper _keeper,
         bytes32 _inputHash,
-        bytes32 _outputHash
+        bytes32 _outputHash,
+        int8 _decimalDiff,
+        uint256 _minValue,
+        uint256 _maxValue
     ) public returns (uint256) {
         channels.push(
             Channel({
@@ -71,6 +78,9 @@ contract Vault is IVault {
                 inputHash: _inputHash,
                 outputId: 0,
                 outputHash: _outputHash,
+                decimalDiff: _decimalDiff,
+                minValue: _minValue,
+                maxValue: _maxValue,
                 erc20: _erc20,
                 keeper: _keeper
             })
@@ -89,6 +99,14 @@ contract Vault is IVault {
     ) public payable override {
         Channel memory channel = channels[id];
 
+        require(value >= channel.minValue && value <= channel.maxValue, "value is illegal");
+
+        int8 decimalDiff = channel.decimalDiff;
+        uint8 decimalDiffAbs = abs(decimalDiff);
+        if (decimalDiff >= 0) {
+            require(value >= (10 ** decimalDiffAbs), "min value required");
+        }
+        
         if (id == 0) {
             require(msg.value == value, "Transfer Require failed.");
         } else {
@@ -129,6 +147,14 @@ contract Vault is IVault {
 
         requireAndUpdateSpentHashes(nextHash);
 
+        int8 decimalDiff = channel.decimalDiff;
+        uint8 decimalDiffAbs = abs(decimalDiff);
+        if (decimalDiff > 0) {
+            value = value * (10 ** decimalDiffAbs);
+        } else {
+            value = value / (10 ** decimalDiffAbs);
+        }
+
         if (id == 0) {
             dest.transfer(value);
         } else {
@@ -138,6 +164,10 @@ contract Vault is IVault {
         emit Output(id, channel.outputId + 1, nextHash, dest, value);
         channels[id].outputId = channel.outputId + 1;
         channels[id].outputHash = nextHash;
+    }
+
+    function abs(int8 x) private pure returns (uint8) {
+        return x >= 0 ? uint8(x) : uint8(-x);
     }
 
     function requireAndUpdateSpentHashes(bytes32 _hash) internal {
