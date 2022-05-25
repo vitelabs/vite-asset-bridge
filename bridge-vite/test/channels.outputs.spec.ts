@@ -1,14 +1,17 @@
 import { expect } from "chai";
 // import { beforeEach, it } from "mocha";
-const vuilder = require("@vite/vuilder");
+import * as vuilder from "@vite/vuilder";
 import config from "./vite.config.json";
 import accounts from "./data/accounts.json";
 import { ethers } from "ethers";
 import assert from "assert";
 
 let provider: any;
-let deployer: any;
+let deployer: vuilder.UserAccount;
 let vault: any;
+const decimalDiff = 0;
+const minValue = "100000000000000000";
+const maxValue = "10000000000000000000";
 
 const tokenId = "tti_5649544520544f4b454e6e40";
 const addressArr = [
@@ -31,7 +34,7 @@ describe("test Vault", () => {
     console.log("deployer", deployer.address);
 
     for (let i = 0; i < addressArr.length; i++) {
-      await deployer.send({ toAddress: addressArr[i] }).autoSend();
+      await deployer.send({ toAddress: addressArr[i], tokenId: "tti_5649544520544f4b454e6e40", amount: "0", data: ""}).autoSend();
     }
     await Promise.all([
       keepers[0].receiveAll(),
@@ -55,9 +58,6 @@ describe("test Vault", () => {
     await deployer.sendToken(vault.address, "100000000000000000000", tokenId);
   });
 
-
-
-
   it("test vault outputs", async () => {
     const inputHash =
       "0x391ea23ff9ad101ca92b3a1ea2cb9687731d7a8251e2ec7cfd432456503a5920";
@@ -70,7 +70,7 @@ describe("test Vault", () => {
     });
     await vault.call(
       "newChannelWithHash",
-      [tokenId, inputHash, outputHash, keeperId],
+      [tokenId, inputHash, outputHash, keeperId, decimalDiff, minValue, maxValue],
       { amount: "0" }
     );
 
@@ -93,7 +93,7 @@ describe("test Vault", () => {
         approved.push(approveOutput(keepers[j], vault, keeperId, outputs[i]));
       }
       await Promise.all(approved);
-      await output(vault, channelId, outputs[i]);
+      await output(vault, channelId, outputs[i], decimalDiff);
     }
   });
 });
@@ -128,7 +128,8 @@ async function approveOutput(
 async function output(
   vault: any,
   channelId: string,
-  output: { hash: string; dest: string; value: string }
+  output: { hash: string; dest: string; value: string },
+  decimalDiff: any
 ) {
   expect(await vault.query("numChannels", [])).to.be.deep.equal(["1"]);
 
@@ -142,6 +143,8 @@ async function output(
     }
   );
 
+  let scaledValue = decimalDiff < 0 ? parseInt(output.value) / (Math.pow(10, -decimalDiff)) : parseInt(output.value) * (Math.pow(10, decimalDiff));
+
   {
     // expect Approved event
     const events = await vault.getPastEvents("Output", {
@@ -154,13 +157,13 @@ async function output(
         "1": (+outputId + 1).toString(),
         "2": output.hash.replace("0x", ""),
         "3": output.dest,
-        "4": output.value,
+        "4": scaledValue.toString(),
 
         channelId: channelId,
         index: (+outputId + 1).toString(),
         outputHash: output.hash.replace("0x", ""),
         dest: output.dest,
-        value: output.value,
+        value: scaledValue.toString(),
       },
     ]);
   }

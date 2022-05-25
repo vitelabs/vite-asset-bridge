@@ -1,5 +1,5 @@
 import { expect } from "chai";
-const vuilder = require("@vite/vuilder");
+import * as vuilder from "@vite/vuilder";
 import config from "./deploy.config.json";
 import channelCfg from "./channel.config.json"
 import contractCfg from "./contract.config.json"
@@ -11,7 +11,7 @@ async function run(): Promise<void> {
   const deployer = vuilder.newAccount(config.deployer, 0, provider);
 
   // fix: stakeForQuota not work right now 
-  const block = deployer.stakeForQuota({ beneficiaryAddress: contractCfg.vault, amount: ethers.utils.parseEther("5000")});
+  const block = deployer.stakeForQuota({ beneficiaryAddress: contractCfg.vault, amount: ethers.utils.parseEther("5000").toString()});
   await block.autoSend();
 
   console.log("stake quota success.")
