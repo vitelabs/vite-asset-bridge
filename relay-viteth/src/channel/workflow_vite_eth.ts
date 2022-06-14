@@ -1,6 +1,7 @@
 import {
   ChannelVite,
   confirmed as txConfirmed,
+  ViteInputEvent,
   ViteProvedEvent,
 } from "./channelVite";
 import { ChannelEther } from "./channelEther";
@@ -10,6 +11,7 @@ import {
   toJobs,
   StoredLogIndex,
   checkInputIndex,
+  SenderMeta,
 } from "./common";
 
 export class WorkflowViteEth {
@@ -145,14 +147,14 @@ export class WorkflowViteEth {
     // new input happened
     const input = events[0];
     const ethChannelId = this.jobs.get(input.channelId.toString())?.channelId;
-    if(!ethChannelId){
+    if (!ethChannelId) {
       console.log("[vite->eth] eth channel id not exist", ethChannelId);
       return;
     }
     if (!checkInputIndex(input, info)) {
       return;
     }
-    
+
     console.log(events);
 
     // scan new input proved
@@ -185,38 +187,63 @@ export class WorkflowViteEth {
     if (provedEvents.length < this.channelEther.etherKeeperThreshold) {
       return;
     }
-    
 
-    
-
-    if (await this.channelEther.approved("0x" + input.inputHash)) {
-      console.log("[vite->eth]input hash approved in eth chain.");
+    // ensure send tx successfully 
+    let nonce;
+    let metaInfo = (await this.channelVite.getInfo("_senderMeta")) as SenderMeta;
+    if (!metaInfo) {
+      nonce = await this.channelEther.getTransactionCount();
+      console.log("current nonce:", nonce);
     } else {
-      console.log("[vite->eth]ether approve id:", input.inputHash);
-      console.log("[vite->eth]approve input", JSON.stringify(provedEvents));
-      await this.channelEther.approveAndExecOutput(
-        ethChannelId,
-        "0x" + input.inputHash,
-        provedEvents
-          .slice(0, this.channelEther.etherKeeperThreshold)
-          .map((x:ViteProvedEvent) => {
-            return {
-              r: "0x" + x.sigR,
-              s: "0x" + x.sigS,
-              v: x.sigV,
-            };
-          }),
-        "0x" + input.dest,
-        input.value
-      );
+      nonce = metaInfo.nonce + 1;
     }
 
-    info.inputsIndex[input.channelId] = input.index;
-    await this.channelVite.saveSubmitInputs({
-      height: input.height,
-      logIndex: -1,
-      txIndex: -1,
-      inputsIndex: info.inputsIndex,
-    });
+    let success = await sendTxWithNonce(nonce, this.channelEther, this.channelVite, ethChannelId, input, provedEvents);
+    if (success) {
+      info.inputsIndex[input.channelId] = input.index;
+      await this.channelVite.saveSubmitInputs({
+        height: input.height,
+        logIndex: -1,
+        txIndex: -1,
+        inputsIndex: info.inputsIndex,
+      });
+
+      await this.channelVite.saveSenderMeta({
+        nonce: nonce,
+      });
+    }
+  }
+}
+
+async function sendTxWithNonce(nonce: number, channelEther: ChannelEther, channelVite: ChannelVite, ethChannelId: string, input: ViteInputEvent, provedEvents: any): Promise<boolean> {
+  if (nonce < 0) {
+    throw new Error("nonce is illegal!");
+  }
+
+  let txInfo = await channelVite.getInfo("_addr_" + (nonce - 1));
+  if (!txInfo || await channelEther.getConfirmationsByHash(txInfo.hash) > 1) {
+    const tx = await channelEther.approveAndExecOutput(
+      ethChannelId,
+      "0x" + input.inputHash,
+      provedEvents
+        .slice(0, channelEther.etherKeeperThreshold)
+        .map((x: ViteProvedEvent) => {
+          return {
+            r: "0x" + x.sigR,
+            s: "0x" + x.sigS,
+            v: x.sigV,
+          };
+        }),
+      "0x" + input.dest,
+      input.value,
+      nonce
+    );
+    console.log("tx info:", tx);
+
+    await channelVite.saveAddrNonceTx(nonce, tx);
+    return true;
+  } else {
+    await channelEther.sendRawTx(txInfo);
+    return false;
   }
 }

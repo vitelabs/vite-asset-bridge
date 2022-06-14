@@ -114,7 +114,9 @@ export function toJobs(
   return jobs;
 }
 
-
+export interface SenderMeta {
+  nonce: number;
+}
 
 export interface LogEvent {
   height: number;

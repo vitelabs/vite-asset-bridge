@@ -100,6 +100,10 @@ export class ChannelEther {
     return false;
   }
 
+  async getConfirmationsByHash(hash: string): Promise<number> {
+    return this.etherProvider.getConfirmationsByTxHash(hash);
+  }
+
   async scanConfirmedInputs(
     fromHeight: number
   ): Promise<{ toHeight: number; events: InputEvent[] }> {
@@ -107,7 +111,6 @@ export class ChannelEther {
       fromHeight = +this.fromBlockHeight;
     }
     const current = await this.etherProvider.getBlockNumber();
-
     let toHeight = BigInt(current) - BigInt(this.confirmedThreshold);
     if (BigInt(toHeight) > BigInt(fromHeight) + 5000n) {
       toHeight = BigInt(fromHeight) + 5000n;
@@ -186,13 +189,22 @@ export class ChannelEther {
       .approveId(vArr, rArr, sArr, msg);
   }
 
+  async sendRawTx(signedTx: any) {
+    await this.etherProvider.sendTransaction(signedTx);
+  }
+
+  async getTransactionCount(): Promise<number> {
+    return await this.signer.getTransactionCount();
+  }
+
   async approveAndExecOutput(
     channelId: string,
     msg: string,
     events: any[],
     dest: string,
-    value: string
-  ) {
+    value: string,
+    nonce: number,
+  ): Promise<any> {
     console.log(msg, events);
     let sigs: any[] = [];
     events.forEach((sig) => {
@@ -210,11 +222,11 @@ export class ChannelEther {
     const vArr = sigs.map((s) => s.v);
     const sArr = sigs.map((s) => s.s);
 
-    console.log(this.signer.address,"----------");
-    
-    console.log(channelId, msg, dest, value,"----------",await this.prevOutputId(channelId));
+    console.log(this.signer.address, "----------");
+    console.log(channelId, msg, dest, value, "----------", await this.prevOutputId(channelId));
 
-    await this.etherKeeperContract
+    const options = { nonce: nonce }
+    const txResponse = await this.etherKeeperContract
       .connect(this.signer)
       .approveAndExecOutput(
         vArr,
@@ -224,8 +236,10 @@ export class ChannelEther {
         msg,
         dest,
         value,
-        this.etherChannelAddress
+        this.etherChannelAddress,
+        options
       );
+    return txResponse;
   }
 
   async signId(id: string) {
@@ -251,6 +265,10 @@ export class ChannelEther {
 
   async approved(inputHash:string){
     return this.etherKeeperContract.approvedIds(inputHash);
+  }
+
+  async spent(inputHash: string) {
+    return this.etherChannelContract.spent(inputHash);
   }
 
   async token() {

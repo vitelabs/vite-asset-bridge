@@ -8,13 +8,13 @@ import { constant } from "@vite/vitejs";
 import _viteAbi from "./channel.vite.abi.json";
 import { offChainCode } from "./channel.vite.code.json";
 import { decodeLog } from "@vite/vitejs/distSrc/abi";
-import { InputEvent, LogEvent, StoredLogIndex } from "./common";
+import { InputEvent, LogEvent, SenderMeta, StoredLogIndex } from "./common";
 interface ConfirmedInfo {
   scannedHeight: string;
   index: string;
 }
 
-interface ViteInputEvent extends InputEvent {
+export interface ViteInputEvent extends InputEvent {
   accountBlockHash: string;
 }
 
@@ -88,6 +88,14 @@ export class ChannelVite {
   }
   saveSubmitInputs(storedIndex: StoredLogIndex) {
     this.updateInfo("_submit", storedIndex);
+  }
+
+  saveSenderMeta(senderMeta: SenderMeta) {
+    this.updateInfo("_senderMata", senderMeta);
+  }
+
+  saveAddrNonceTx(nonce:number, tx: any) {
+    this.updateInfo("_addr_"+nonce, tx);
   }
 
   async scanInputEvents(fromHeight: number): Promise<{
