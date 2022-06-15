@@ -2,10 +2,16 @@
 // ---------
 import * as utils from "../utils/utils";
 import { ethers } from "ethers";
-import { newEtherProvider, privateKey, StoredLogIndex, LogEvent,InputEvent,logCompare } from "./common";
+import {
+  newEtherProvider,
+  privateKey,
+  StoredLogIndex,
+  LogEvent,
+  InputEvent,
+  logCompare,
+} from "./common";
 import _channelAbi from "./channel.ether.abi.json";
 import _keeperAbi from "./keeper.ether.abi.json";
-
 
 const ETH_INFO_PATH_PREFIX = ".channel_ether/info";
 
@@ -102,10 +108,10 @@ export class ChannelEther {
 
   async getConfirmationByHash(hash: string): Promise<number> {
     const tx = await this.etherProvider.getTransaction(hash);
-    if(tx == null){
+    if (tx == null) {
       return 0;
     }
-    
+
     return tx.confirmations;
   }
 
@@ -208,7 +214,7 @@ export class ChannelEther {
     events: any[],
     dest: string,
     value: string,
-    nonce: number,
+    nonce: number
   ): Promise<any> {
     console.log(msg, events);
     let sigs: any[] = [];
@@ -228,12 +234,19 @@ export class ChannelEther {
     const sArr = sigs.map((s) => s.s);
 
     console.log(this.signer.address, "----------");
-    console.log(channelId, msg, dest, value, "----------", await this.prevOutputId(channelId));
+    console.log(
+      channelId,
+      msg,
+      dest,
+      value,
+      "----------",
+      await this.prevOutputId(channelId)
+    );
 
-    const options = { nonce: nonce }
-    const txResponse = await this.etherKeeperContract
+    const options = { nonce: nonce };
+    const txRequest = await this.etherKeeperContract
       .connect(this.signer)
-      .approveAndExecOutput(
+      .populateTransaction.approveAndExecOutput(
         vArr,
         rArr,
         sArr,
@@ -244,7 +257,12 @@ export class ChannelEther {
         this.etherChannelAddress,
         options
       );
-    return txResponse;
+    const tx = await this.signer.populateTransaction(txRequest);
+    const signedTx = await this.signer.signTransaction(tx);
+    console.log("signed tx:", signedTx);
+    const response = await this.etherProvider.sendTransaction(signedTx);
+    await response.wait();
+    return signedTx;
   }
 
   async signId(id: string) {
@@ -264,11 +282,11 @@ export class ChannelEther {
     return this.etherChannelContract.outputIndex();
   }
 
-  async prevOutputId(channelId:string) {
+  async prevOutputId(channelId: string) {
     return this.etherChannelContract.channels(channelId);
   }
 
-  async approved(inputHash:string){
+  async approved(inputHash: string) {
     return this.etherKeeperContract.approvedIds(inputHash);
   }
 
