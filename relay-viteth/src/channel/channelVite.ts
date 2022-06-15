@@ -33,9 +33,11 @@ interface ViteLogEvent {
 }
 
 const VITE_INFO_PATH_PREFIX = ".channel_vite/info";
+const TXS_PATH_PREFIX = ".channel_vite/txs/info";
 
 export class ChannelVite {
   infoPath: string;
+  txsPath: string;
 
   viteProvider: any;
   viteChannelAddress: string;
@@ -55,8 +57,10 @@ export class ChannelVite {
     this.viteOffChainCode = Buffer.from(offChainCode, "hex").toString("base64");
     if (dataDir) {
       this.infoPath = dataDir + "/" + VITE_INFO_PATH_PREFIX;
+      this.txsPath = dataDir + "/" + TXS_PATH_PREFIX;
     } else {
       this.infoPath = VITE_INFO_PATH_PREFIX;
+      this.txsPath = TXS_PATH_PREFIX;
     }
     this.viteProvider = new ViteAPI(new HTTP_RPC(cfg.url), () => {
       console.log("vite provider connected");
@@ -83,6 +87,19 @@ export class ChannelVite {
     utils.writeJson(this.infoPath + prefix, JSON.stringify(info));
   }
 
+  getTxRecord(prefix: string): any {
+    let json = utils.readJson(this.txsPath + prefix);
+    if (!json) {
+      return json;
+    }
+    let info = JSON.parse(json);
+    return info;
+  }
+
+  private updateTxRecord(prefix: string, txRecord: any) {
+    utils.writeJson(this.txsPath + prefix, JSON.stringify(txRecord));
+  }
+
   saveConfirmedInputs(storedIndex: StoredLogIndex) {
     this.updateInfo("_confirmed", storedIndex);
   }
@@ -94,8 +111,8 @@ export class ChannelVite {
     this.updateInfo("_senderMeta", senderMeta);
   }
 
-  saveAddrNonceTx(nonce:number, tx: any) {
-    this.updateInfo("_addr_"+nonce, tx);
+  saveAddrNonceTx(nonce: number, tx: any) {
+    this.updateTxRecord("_addr_" + nonce, tx);
   }
 
   async scanInputEvents(fromHeight: number): Promise<{

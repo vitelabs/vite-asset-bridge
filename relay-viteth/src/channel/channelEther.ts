@@ -9,6 +9,7 @@ import {
   LogEvent,
   InputEvent,
   logCompare,
+  TxRecord,
 } from "./common";
 import _channelAbi from "./channel.ether.abi.json";
 import _keeperAbi from "./keeper.ether.abi.json";
@@ -112,6 +113,7 @@ export class ChannelEther {
       return 0;
     }
 
+    console.log(`the hash: ${hash}, confirmations: ${tx.confirmations}`);
     return tx.confirmations;
   }
 
@@ -215,7 +217,7 @@ export class ChannelEther {
     dest: string,
     value: string,
     nonce: number
-  ): Promise<any> {
+  ): Promise<TxRecord> {
     console.log(msg, events);
     let sigs: any[] = [];
     events.forEach((sig) => {
@@ -259,10 +261,14 @@ export class ChannelEther {
       );
     const tx = await this.signer.populateTransaction(txRequest);
     const signedTx = await this.signer.signTransaction(tx);
-    console.log("signed tx:", signedTx);
-    const response = await this.etherProvider.sendTransaction(signedTx);
-    await response.wait();
-    return signedTx;
+    const txResponse = await this.etherProvider.sendTransaction(signedTx);
+    console.log("call approveAndExecOutput, tx resp:", txResponse);
+
+    let txRecord = {
+      signedTx: signedTx,
+      hash: txResponse.hash,
+    }
+    return txRecord;
   }
 
   async signId(id: string) {

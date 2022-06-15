@@ -36,10 +36,11 @@ def blockRun(cmd, cwd):
 
 
 def backgroundRunRelay(index, submitted):
+    log = open("testing-integration/data." + str(index) + "/stdout", "wb")
     runFp = subprocess.Popen(
         ["/bin/bash", "-c", "npx ts-node scripts/workflow_with_test.ts"],
         shell=False,
-        stdout=subprocess.DEVNULL,
+        stdout=log,
         stderr=subprocess.STDOUT,
         cwd="./relay-viteth",
         env={
@@ -103,7 +104,9 @@ writeCfg("./bridge-vite/scripts/contract.config.json", {
 })
 
 blockRun("npx ts-node scripts/2input_with_test.ts", "./bridge-vite")
-print("vite input done.")
+print("vite input1 done.")
+blockRun("npx ts-node scripts/2input_with_test.ts", "./bridge-vite")
+print("vite input2 done.")
 
 print("relay 0 run")
 fp0 = backgroundRunRelay(0, 1)
@@ -125,7 +128,7 @@ while True:
         etherOutput = blockRun(
             "npx hardhat run scripts_test/4channel_output_query.js",
             "./bridge-eth")
-        if etherOutput["outputId"] == "1":
+        if etherOutput["outputId"] == "2":
             print("vite -> ether done.")
             etherOk = True
     if viteOk and etherOk:

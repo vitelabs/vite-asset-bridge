@@ -12,6 +12,7 @@ import {
   StoredLogIndex,
   checkInputIndex,
   SenderMeta,
+  TxRecord,
 } from "./common";
 import { ethers } from "ethers";
 
@@ -189,7 +190,7 @@ export class WorkflowViteEth {
       return;
     }
 
-    // ensure send tx successfully 
+    // make sure that every tx was sent successfully 
     let nonce;
     let metaInfo = (await this.channelVite.getInfo("_senderMeta")) as SenderMeta;
     if (!metaInfo) {
@@ -222,9 +223,9 @@ async function sendTxWithNonce(nonce: number, channelEther: ChannelEther, channe
     throw new Error("nonce is illegal!");
   }
 
-  let txInfo = await channelVite.getInfo("_addr_" + (nonce - 1));
-  if (!txInfo || await channelEther.getConfirmationByHash(txInfo.hash) >= 1) {
-    const tx = await channelEther.approveAndExecOutput(
+  let txRecord = await channelVite.getTxRecord("_addr_" + (nonce - 1)) as TxRecord;
+  if (!txRecord || await channelEther.getConfirmationByHash(txRecord.hash) >= 1) {
+    const txRecord = await channelEther.approveAndExecOutput(
       ethChannelId,
       "0x" + input.inputHash,
       provedEvents
@@ -240,15 +241,20 @@ async function sendTxWithNonce(nonce: number, channelEther: ChannelEther, channe
       input.value,
       nonce
     );
-    console.log("tx info:", tx);
 
-    await channelVite.saveAddrNonceTx(nonce, tx);
+    console.log("txRecord info:", txRecord);
+    await channelVite.saveAddrNonceTx(nonce, txRecord);
+
     return true;
   } else {
+
     console.log("try to send previous tx!");
-    // fix:await channelEther.sendRawTx(txInfo);
-    await channelEther.sendRawTx(ethers.utils.formatBytes32String(txInfo));
-    
+    try {
+      await channelEther.sendRawTx(txRecord.signedTx);
+    } catch (err) {
+      console.log("failed to send previous tx, err:", err);
+    }
+
     return false;
   }
 }

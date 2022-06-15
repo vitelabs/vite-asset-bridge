@@ -118,6 +118,11 @@ export interface SenderMeta {
   nonce: number;
 }
 
+export interface TxRecord {
+  signedTx: string;
+  hash: string;
+}
+
 export interface LogEvent {
   height: number;
   txIndex: number;
