@@ -100,8 +100,13 @@ export class ChannelEther {
     return false;
   }
 
-  async getConfirmationsByHash(hash: string): Promise<number> {
-    return this.etherProvider.getConfirmationsByTxHash(hash);
+  async getConfirmationByHash(hash: string): Promise<number> {
+    const tx = await this.etherProvider.getTransaction(hash);
+    if(tx == null){
+      return 0;
+    }
+    
+    return tx.confirmations;
   }
 
   async scanConfirmedInputs(

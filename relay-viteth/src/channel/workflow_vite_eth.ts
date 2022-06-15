@@ -13,6 +13,7 @@ import {
   checkInputIndex,
   SenderMeta,
 } from "./common";
+import { ethers } from "ethers";
 
 export class WorkflowViteEth {
   channelVite: ChannelVite;
@@ -193,8 +194,9 @@ export class WorkflowViteEth {
     let metaInfo = (await this.channelVite.getInfo("_senderMeta")) as SenderMeta;
     if (!metaInfo) {
       nonce = await this.channelEther.getTransactionCount();
-      console.log("current nonce:", nonce);
+      console.log("first time to output, current nonce from chain:", nonce);
     } else {
+      console.log("current nonce from file:", metaInfo.nonce);
       nonce = metaInfo.nonce + 1;
     }
 
@@ -221,7 +223,7 @@ async function sendTxWithNonce(nonce: number, channelEther: ChannelEther, channe
   }
 
   let txInfo = await channelVite.getInfo("_addr_" + (nonce - 1));
-  if (!txInfo || await channelEther.getConfirmationsByHash(txInfo.hash) > 1) {
+  if (!txInfo || await channelEther.getConfirmationByHash(txInfo.hash) >= 1) {
     const tx = await channelEther.approveAndExecOutput(
       ethChannelId,
       "0x" + input.inputHash,
@@ -243,7 +245,10 @@ async function sendTxWithNonce(nonce: number, channelEther: ChannelEther, channe
     await channelVite.saveAddrNonceTx(nonce, tx);
     return true;
   } else {
-    await channelEther.sendRawTx(txInfo);
+    console.log("try to send previous tx!");
+    // fix:await channelEther.sendRawTx(txInfo);
+    await channelEther.sendRawTx(ethers.utils.formatBytes32String(txInfo));
+    
     return false;
   }
 }

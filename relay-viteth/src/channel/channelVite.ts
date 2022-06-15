@@ -91,7 +91,7 @@ export class ChannelVite {
   }
 
   saveSenderMeta(senderMeta: SenderMeta) {
-    this.updateInfo("_senderMata", senderMeta);
+    this.updateInfo("_senderMeta", senderMeta);
   }
 
   saveAddrNonceTx(nonce:number, tx: any) {
