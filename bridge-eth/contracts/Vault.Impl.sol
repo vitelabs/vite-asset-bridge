@@ -17,9 +17,11 @@ struct Channel {
     uint256 maxValue;
     IERC20 erc20;
     IKeeper keeper;
+    bool status; // 0: abandoned 1: in use
 }
 
 contract Vault is IVault {
+    address private owner;
     Channel[] public channels;
     mapping(bytes32 => bool) public spentHashes;
 
@@ -41,7 +43,13 @@ contract Vault is IVault {
     );
 
     constructor(IKeeper _keeper, int8 _decimalDiff, uint256 _minValue, uint256 _maxValue) {
+        owner = msg.sender;
         newChannel(IERC20(0x00), _keeper, _decimalDiff, _minValue, _maxValue);
+    }
+
+    modifier ownerOnly() {
+        require(owner == msg.sender, "Caller is not owner");
+        _;
     }
 
     function spent(bytes32 _hash) public view override returns (bool) {
@@ -51,6 +59,7 @@ contract Vault is IVault {
     function newChannel(IERC20 _erc20, IKeeper _keeper, int8 _decimalDiff, uint256 _minValue, uint256 _maxValue)
         public
         override
+        ownerOnly
         returns (uint256)
     {
         bytes32 _inputHash = keccak256(
@@ -71,7 +80,7 @@ contract Vault is IVault {
         int8 _decimalDiff,
         uint256 _minValue,
         uint256 _maxValue
-    ) public returns (uint256) {
+    ) public ownerOnly returns (uint256) {
         channels.push(
             Channel({
                 inputId: 0,
@@ -82,7 +91,8 @@ contract Vault is IVault {
                 minValue: _minValue,
                 maxValue: _maxValue,
                 erc20: _erc20,
-                keeper: _keeper
+                keeper: _keeper,
+                status: true
             })
         );
         requireAndUpdateSpentHashes(_inputHash);
@@ -98,6 +108,8 @@ contract Vault is IVault {
         uint256 value
     ) public payable override {
         Channel memory channel = channels[id];
+        
+        require(channel.status, "the channel is abandoned!");
 
         require(value >= channel.minValue && value <= channel.maxValue, "value is illegal");
 
@@ -177,6 +189,11 @@ contract Vault is IVault {
 
     function channelsLength() public view returns (uint256) {
         return channels.length;
+    }
+
+    function abandonChannel(uint256 id) public {
+        Channel storage channel = channels[id];
+        channel.status = false;
     }
 
     receive() external payable {}
