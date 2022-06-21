@@ -111,7 +111,7 @@ export class WorkflowViteEth {
         sig.r,
         sig.s,
         input.inputHash,
-        input.channelId 
+        input.channelId
       );
     }
 
@@ -195,13 +195,13 @@ export class WorkflowViteEth {
     let metaInfo = (await this.channelVite.getInfo("_senderMeta")) as SenderMeta;
     if (!metaInfo) {
       nonce = await this.channelEther.getTransactionCount();
-      console.log("first time to output, current nonce from chain:", nonce);
+      console.log("[vite->eth] the first time to output, current nonce:", nonce);
     } else {
-      console.log("current nonce from file:", metaInfo.nonce);
+      console.log("[vite->eth] current nonce from file:", metaInfo.nonce);
       nonce = metaInfo.nonce + 1;
     }
 
-    let success = await sendTxWithNonce(nonce, this.channelEther, this.channelVite, ethChannelId, input, provedEvents);
+    let success = await sendTxWithCheckPrevious(nonce, this.channelEther, this.channelVite, ethChannelId, input, provedEvents);
     if (success) {
       info.inputsIndex[input.channelId] = input.index;
       await this.channelVite.saveSubmitInputs({
@@ -218,43 +218,39 @@ export class WorkflowViteEth {
   }
 }
 
-async function sendTxWithNonce(nonce: number, channelEther: ChannelEther, channelVite: ChannelVite, ethChannelId: string, input: ViteInputEvent, provedEvents: any): Promise<boolean> {
+async function sendTxWithCheckPrevious(nonce: number, channelEther: ChannelEther, channelVite: ChannelVite, ethChannelId: string, input: ViteInputEvent, provedEvents: any): Promise<boolean> {
   if (nonce < 0) {
     throw new Error("nonce is illegal!");
   }
 
   let txRecord = await channelVite.getTxRecord("_addr_" + (nonce - 1)) as TxRecord;
-  if (!txRecord || await channelEther.getConfirmationByHash(txRecord.hash) >= 1) {
-    const txRecord = await channelEther.approveAndExecOutput(
-      ethChannelId,
-      "0x" + input.inputHash,
-      provedEvents
-        .slice(0, channelEther.etherKeeperThreshold)
-        .map((x: ViteProvedEvent) => {
-          return {
-            r: "0x" + x.sigR,
-            s: "0x" + x.sigS,
-            v: x.sigV,
-          };
-        }),
-      "0x" + input.dest,
-      input.value,
-      nonce
-    );
-
-    console.log("txRecord info:", txRecord);
-    await channelVite.saveAddrNonceTx(nonce, txRecord);
-
-    return true;
-  } else {
-
-    console.log("try to send previous tx!");
-    try {
-      await channelEther.sendRawTx(txRecord.signedTx);
-    } catch (err) {
-      console.log("failed to send previous tx, err:", err);
-    }
-
+  
+  if (txRecord && await channelEther.getConfirmationByHash(txRecord.hash) < 1) {
+    // send previous tx
+    await channelEther.sendRawTx(txRecord.signedTx);
     return false;
   }
+
+  // send current tx with nonce
+  const record = await channelEther.approveAndExecOutput(
+    ethChannelId,
+    "0x" + input.inputHash,
+    provedEvents
+      .slice(0, channelEther.etherKeeperThreshold)
+      .map((x: ViteProvedEvent) => {
+        return {
+          r: "0x" + x.sigR,
+          s: "0x" + x.sigS,
+          v: x.sigV,
+        };
+      }),
+    "0x" + input.dest,
+    input.value,
+    nonce
+  );
+
+  console.log("txRecord info:", record);
+  await channelVite.saveAddrNonceTx(nonce, record);
+
+  return true;
 }
