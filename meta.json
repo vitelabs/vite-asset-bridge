@@ -49,7 +49,7 @@
             "icon": "https://static.vite.net/image-1257137467/logo/bsc-logo.png",
             "contract": "0x649a886A441f3F956e6442E064C8958D191466a6",
             "erc20": "0xDC0B2bd7cA7deFfbf1a713F87059C9a139c5bB1D",
-            "channel": 1,
+            "channelId": 1,
             "decimals": 18,
             "confirmedThreshold": 10,
             "max": "10",
@@ -64,7 +64,7 @@
             "icon": "https://static.vite.net/image-1257137467/logo/VITE-logo.png",
             "contract": "vite_44949d8b8fde6cd83c816d7f69581f781b68ca46cca72ec92c",
             "tokenId": "tti_5649544520544f4b454e6e40",
-            "channel": 0,
+            "channelId": 0,
             "decimals": 18,
             "confirmedThreshold": 70,
             "max": "10",
@@ -107,6 +107,44 @@
             "confirmedThreshold":70,
             "max": "5",
             "min": "0.1",
+            "fee": {
+              "fixed": "0"
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "token": "ETH",
+      "icon": "https://static.vite.net/image-1257137467/logo/ETH-logo.png",
+      "channels": [
+        [
+          {
+            "network": "ETH",
+            "desc": "ETH TestNet ",
+            "icon": "https://static.vite.net/image-1257137467/logo/ETH-logo.png",
+            "contract": "0x649a886A441f3F956e6442E064C8958D191466a6",
+            "erc20": "none",
+            "channelId": 0,
+            "decimals": 18,
+            "confirmedThreshold": 10,
+            "max": "0.1",
+            "min": "0.01",
+            "fee": {
+              "fixed": "0"
+            }
+          },
+          {
+            "network": "VITE",
+            "desc": "Vite TestNet",
+            "icon": "https://static.vite.net/image-1257137467/logo/ETH-logo.png",
+            "contract": "vite_44949d8b8fde6cd83c816d7f69581f781b68ca46cca72ec92c",
+            "tokenId": "tti_06822f8d096ecdf9356b666c",
+            "channelId": 7,
+            "decimals": 18,
+            "confirmedThreshold": 70,
+            "max": "0.1",
+            "min": "0.01",
             "fee": {
               "fixed": "0"
             }
