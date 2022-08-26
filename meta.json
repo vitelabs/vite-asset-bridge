@@ -39,6 +39,44 @@
       ]
     },
     {
+      "token": "BNB",
+      "icon": "https://static.vite.net/image-1257137467/logo/bsc-logo.png",
+      "channels": [
+        [
+          {
+            "network": "BSC",
+            "desc": "BSC TestNet ",
+            "icon": "https://static.vite.net/image-1257137467/logo/bsc-logo.png",
+            "contract": "0x78C18d3D5f86c9e3e14C13b8065018ACd0d76C11",
+            "erc20": "none",
+            "channelId": 0,
+            "decimals": 18,
+            "confirmedThreshold": 10,
+            "max": "0.1",
+            "min": "0.01",
+            "fee": {
+              "fixed": "0"
+            }
+          },
+          {
+            "network": "VITE",
+            "desc": "Vite TestNet",
+            "icon": "https://static.vite.net/image-1257137467/logo/bsc-logo.png",
+            "contract": "vite_e94c882e6d3905ac212440b47bcdfdd1d2730610c11213d067",
+            "tokenId": "tti_87a529624c7ad1de5f971a34",
+            "channelId": 1,
+            "decimals": 18,
+            "confirmedThreshold":70,
+            "max": "0.1",
+            "min": "0.01",
+            "fee": {
+              "fixed": "0"
+            }
+          }
+        ]
+      ]
+    },
+    {
       "token": "VITE",
       "icon": "https://static.vite.net/image-1257137467/logo/VITE-logo.png",
       "channels": [
