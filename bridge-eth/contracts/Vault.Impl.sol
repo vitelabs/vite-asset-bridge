@@ -141,6 +141,9 @@ contract Vault is IVault {
             abi.encodePacked(channel.outputId, dest, value, channel.outputHash)
         );
         // bytes32 nextId = keccak256(abi.encodePacked(dest));
+        
+        // this two following conditions(2 lines of commands), dont allow any one to pass, because, 'outputHash' comes from signed message in 'keeper' 
+        // but 'nextHash' calculated via keccak256(abi.encodePacked(channel.outputId, dest, value, channel.outputHash)).
         require(nextHash == outputHash, "hash verify failed");
 
         channel.keeper.approved(outputHash);
