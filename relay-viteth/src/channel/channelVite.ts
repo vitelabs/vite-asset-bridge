@@ -8,13 +8,13 @@ import { constant } from "@vite/vitejs";
 import _viteAbi from "./channel.vite.abi.json";
 import { offChainCode } from "./channel.vite.code.json";
 import { decodeLog } from "@vite/vitejs/distSrc/abi";
-import { InputEvent, LogEvent, StoredLogIndex } from "./common";
+import { InputEvent, LogEvent, SenderMeta, StoredLogIndex } from "./common";
 interface ConfirmedInfo {
   scannedHeight: string;
   index: string;
 }
 
-interface ViteInputEvent extends InputEvent {
+export interface ViteInputEvent extends InputEvent {
   accountBlockHash: string;
 }
 
@@ -33,9 +33,11 @@ interface ViteLogEvent {
 }
 
 const VITE_INFO_PATH_PREFIX = ".channel_vite/info";
+const TXS_PATH_PREFIX = ".channel_vite/txs/info";
 
 export class ChannelVite {
   infoPath: string;
+  txsPath: string;
 
   viteProvider: any;
   viteChannelAddress: string;
@@ -55,8 +57,10 @@ export class ChannelVite {
     this.viteOffChainCode = Buffer.from(offChainCode, "hex").toString("base64");
     if (dataDir) {
       this.infoPath = dataDir + "/" + VITE_INFO_PATH_PREFIX;
+      this.txsPath = dataDir + "/" + TXS_PATH_PREFIX;
     } else {
       this.infoPath = VITE_INFO_PATH_PREFIX;
+      this.txsPath = TXS_PATH_PREFIX;
     }
     this.viteProvider = new ViteAPI(new HTTP_RPC(cfg.url), () => {
       console.log("vite provider connected");
@@ -83,11 +87,32 @@ export class ChannelVite {
     utils.writeJson(this.infoPath + prefix, JSON.stringify(info));
   }
 
+  getTxRecord(prefix: string): any {
+    let json = utils.readJson(this.txsPath + prefix);
+    if (!json) {
+      return json;
+    }
+    let info = JSON.parse(json);
+    return info;
+  }
+
+  private updateTxRecord(prefix: string, txRecord: any) {
+    utils.writeJson(this.txsPath + prefix, JSON.stringify(txRecord));
+  }
+
   saveConfirmedInputs(storedIndex: StoredLogIndex) {
     this.updateInfo("_confirmed", storedIndex);
   }
   saveSubmitInputs(storedIndex: StoredLogIndex) {
     this.updateInfo("_submit", storedIndex);
+  }
+
+  saveSenderMeta(senderMeta: SenderMeta) {
+    this.updateInfo("_senderMeta", senderMeta);
+  }
+
+  saveAddrNonceTx(nonce: number, tx: any) {
+    this.updateTxRecord("_addr_" + nonce, tx);
   }
 
   async scanInputEvents(fromHeight: number): Promise<{

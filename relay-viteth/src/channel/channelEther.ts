@@ -2,10 +2,17 @@
 // ---------
 import * as utils from "../utils/utils";
 import { ethers } from "ethers";
-import { newEtherProvider, privateKey, StoredLogIndex, LogEvent,InputEvent,logCompare } from "./common";
+import {
+  newEtherProvider,
+  privateKey,
+  StoredLogIndex,
+  LogEvent,
+  InputEvent,
+  logCompare,
+  TxRecord,
+} from "./common";
 import _channelAbi from "./channel.ether.abi.json";
 import _keeperAbi from "./keeper.ether.abi.json";
-
 
 const ETH_INFO_PATH_PREFIX = ".channel_ether/info";
 
@@ -100,6 +107,16 @@ export class ChannelEther {
     return false;
   }
 
+  async getConfirmationByHash(hash: string): Promise<number> {
+    const tx = await this.etherProvider.getTransaction(hash);
+    if (tx == null) {
+      return 0;
+    }
+
+    console.log(`the hash: ${hash}, confirmations: ${tx.confirmations}`);
+    return tx.confirmations;
+  }
+
   async scanConfirmedInputs(
     fromHeight: number
   ): Promise<{ toHeight: number; events: InputEvent[] }> {
@@ -107,7 +124,6 @@ export class ChannelEther {
       fromHeight = +this.fromBlockHeight;
     }
     const current = await this.etherProvider.getBlockNumber();
-
     let toHeight = BigInt(current) - BigInt(this.confirmedThreshold);
     if (BigInt(toHeight) > BigInt(fromHeight) + 5000n) {
       toHeight = BigInt(fromHeight) + 5000n;
@@ -186,13 +202,22 @@ export class ChannelEther {
       .approveId(vArr, rArr, sArr, msg);
   }
 
+  async sendRawTx(signedTx: any) {
+    await this.etherProvider.sendTransaction(signedTx);
+  }
+
+  async getTransactionCount(): Promise<number> {
+    return await this.signer.getTransactionCount();
+  }
+
   async approveAndExecOutput(
     channelId: string,
     msg: string,
     events: any[],
     dest: string,
-    value: string
-  ) {
+    value: string,
+    nonce: number
+  ): Promise<TxRecord> {
     console.log(msg, events);
     let sigs: any[] = [];
     events.forEach((sig) => {
@@ -210,13 +235,20 @@ export class ChannelEther {
     const vArr = sigs.map((s) => s.v);
     const sArr = sigs.map((s) => s.s);
 
-    console.log(this.signer.address,"----------");
-    
-    console.log(channelId, msg, dest, value,"----------",await this.prevOutputId(channelId));
+    console.log(this.signer.address, "----------");
+    console.log(
+      channelId,
+      msg,
+      dest,
+      value,
+      "----------",
+      await this.prevOutputId(channelId)
+    );
 
-    await this.etherKeeperContract
+    const options = { nonce: nonce };
+    const txRequest = await this.etherKeeperContract
       .connect(this.signer)
-      .approveAndExecOutput(
+      .populateTransaction.approveAndExecOutput(
         vArr,
         rArr,
         sArr,
@@ -224,8 +256,19 @@ export class ChannelEther {
         msg,
         dest,
         value,
-        this.etherChannelAddress
+        this.etherChannelAddress,
+        options
       );
+    const tx = await this.signer.populateTransaction(txRequest);
+    const signedTx = await this.signer.signTransaction(tx);
+    const txResponse = await this.etherProvider.sendTransaction(signedTx);
+    console.log("call approveAndExecOutput, tx resp:", txResponse);
+
+    let txRecord = {
+      signedTx: signedTx,
+      hash: txResponse.hash,
+    }
+    return txRecord;
   }
 
   async signId(id: string) {
@@ -245,12 +288,16 @@ export class ChannelEther {
     return this.etherChannelContract.outputIndex();
   }
 
-  async prevOutputId(channelId:string) {
+  async prevOutputId(channelId: string) {
     return this.etherChannelContract.channels(channelId);
   }
 
-  async approved(inputHash:string){
+  async approved(inputHash: string) {
     return this.etherKeeperContract.approvedIds(inputHash);
+  }
+
+  async spent(inputHash: string) {
+    return this.etherChannelContract.spent(inputHash);
   }
 
   async token() {
