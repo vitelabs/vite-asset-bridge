@@ -152,7 +152,25 @@ export class WorkflowViteEth {
     if (!checkInputIndex(input, info)) {
       return;
     }
-    
+
+    var balance: any;
+    if (ethChannelId == '0') {
+      balance = await this.channelEther.getVaultETHBalance();
+    } else {
+      const tokenId = await this.channelEther.getChannelInfo(ethChannelId);
+      if(tokenId == null){
+        console.log(
+          "[eth->vite]token id not exist, the channelId:", ethChannelId);
+        return;
+      }
+      balance = await this.channelEther.getVaultERC20Balance(tokenId);
+    }
+
+    if(BigInt(input.value) > balance) {
+      console.warn(`[vite->eth] vault value in channel ${ethChannelId} is not enough`);
+      return;
+    }
+
     console.log(events);
 
     // scan new input proved

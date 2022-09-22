@@ -87,6 +87,19 @@ export class WorkflowEthVite {
       return;
     }
 
+    const tokenId = await this.channelVite.getChannelInfo(viteChannelId);
+    if(tokenId == null){
+      console.log(
+        "[eth->vite]token id not exist, the channelId:", viteChannelId);
+      return;
+    }
+
+    const {balance} = await this.channelVite.queryVaultBalance(tokenId);
+    if(BigInt(input.value) > balance) {
+      console.warn(`[eth->vite] vault value in channel ${viteChannelId} is not enough`);
+      return;
+    }
+
     const outputIdx = await this.channelVite.outputIndex(viteChannelId);
     if (!outputIdx) {
       console.warn("undefined outputIdx");

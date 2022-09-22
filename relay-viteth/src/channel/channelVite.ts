@@ -338,6 +338,23 @@ export class ChannelVite {
     }
   }
 
+  async getChannelInfo(channelId: string) {
+    const channel = await readContract(
+      this.viteProvider,
+      this.viteChannelAddress,
+      this.viteChannelAbi,
+      this.viteOffChainCode,
+      "channels",
+      [channelId]
+    );
+
+    if (!channel) {
+      return null;
+    } else {
+      return channel[4];
+    }
+  }
+
   async outputIndex(channelId: string) {
     const channel = await readContract(
       this.viteProvider,
@@ -418,6 +435,11 @@ export class ChannelVite {
       return undefined;
     }
     return +result[0] === 1;
+  }
+
+  async queryVaultBalance(tokenId: string): Promise<{balance: BigInt}> {
+    const balance = BigInt((await this.viteProvider.getBalanceInfo(this.viteChannelAddress)).balance.balanceInfoMap[tokenId].balance);
+    return { balance };
   }
 }
 

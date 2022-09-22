@@ -5,6 +5,7 @@ import { ethers } from "ethers";
 import { newEtherProvider, privateKey, StoredLogIndex, LogEvent,InputEvent,logCompare } from "./common";
 import _channelAbi from "./channel.ether.abi.json";
 import _keeperAbi from "./keeper.ether.abi.json";
+import _erc20Abi from "./erc20.ether.abi.json";
 
 
 const ETH_INFO_PATH_PREFIX = ".channel_ether/info";
@@ -14,6 +15,7 @@ export class ChannelEther {
 
   etherChannelAddress: string;
   etherChannelAbi: any[];
+  etherErc20Abi: any[];
   etherProvider: any;
   etherChannelContract: ethers.Contract;
 
@@ -32,6 +34,7 @@ export class ChannelEther {
   constructor(cfg: any, dataDir: string) {
     this.etherChannelAbi = _channelAbi;
     this.etherKeeperAbi = _keeperAbi;
+    this.etherErc20Abi = _erc20Abi;
     if (dataDir) {
       this.infoPath = dataDir + "/" + ETH_INFO_PATH_PREFIX;
     } else {
@@ -148,6 +151,30 @@ export class ChannelEther {
         };
       }),
     };
+  }
+
+  async getVaultETHBalance(): Promise<{ balance: number }> {
+    const remainETH = await this.etherProvider.getBalance(this.etherChannelAddress);
+    return { balance: remainETH };
+  }
+
+  async getVaultERC20Balance(erc20Addr: string): Promise<{ balance: number }> {
+    const etherErc20Contract = new ethers.Contract(
+      erc20Addr,
+      this.etherErc20Abi,
+      this.etherProvider
+    );
+    const remainErc20Value = etherErc20Contract.connect(this.signer).balanceOf(this.etherChannelAddress);
+    return { balance: remainErc20Value };
+  }
+
+  async getChannelInfo(channelId: string) {
+    const channel =  this.etherChannelContract.channels(channelId);
+    if (!channel) {
+      return null;
+    } else {
+      return channel.erc20;
+    }
   }
 
   async isKeeper(msg: string, r: string, s: string, v: number) {
