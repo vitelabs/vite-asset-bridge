@@ -153,18 +153,18 @@ export class ChannelEther {
     };
   }
 
-  async getVaultETHBalance(): Promise<{ balance: number }> {
-    const remainETH = await this.etherProvider.getBalance(this.etherChannelAddress);
+  async getVaultETHBalance(): Promise<{ balance: BigInt }> {
+    const remainETH = BigInt(await this.etherProvider.getBalance(this.etherChannelAddress));
     return { balance: remainETH };
   }
 
-  async getVaultERC20Balance(erc20Addr: string): Promise<{ balance: number }> {
+  async getVaultERC20Balance(erc20Addr: string): Promise<{ balance: BigInt }> {
     const etherErc20Contract = new ethers.Contract(
       erc20Addr,
       this.etherErc20Abi,
       this.etherProvider
     );
-    const remainErc20Value = etherErc20Contract.connect(this.signer).balanceOf(this.etherChannelAddress);
+    const remainErc20Value = BigInt(etherErc20Contract.connect(this.signer).balanceOf(this.etherChannelAddress));
     return { balance: remainErc20Value };
   }
 

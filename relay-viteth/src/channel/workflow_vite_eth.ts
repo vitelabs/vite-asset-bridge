@@ -158,9 +158,9 @@ export class WorkflowViteEth {
       balance = await this.channelEther.getVaultETHBalance();
     } else {
       const tokenId = await this.channelEther.getChannelInfo(ethChannelId);
-      if(tokenId == null){
+      if (tokenId == null) {
         console.log(
-          "[eth->vite]token id not exist, the channelId:", ethChannelId);
+          "[vite->eth]token id not exist, the channelId:", ethChannelId);
         return;
       }
       balance = await this.channelEther.getVaultERC20Balance(tokenId);
