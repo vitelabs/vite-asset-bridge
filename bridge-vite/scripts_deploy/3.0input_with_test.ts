@@ -21,7 +21,7 @@ async function run(): Promise<void> {
   const block = await vault.call(
     "input",
     [vaultCfg.channelId, inputCfg.dest, inputCfg.value],
-    { amount: inputCfg.value }
+    { amount: inputCfg.value, tokenId: "tti_5649544520544f4b454e6e40"}
   );
 
   console.log("result: ", JSON.stringify({ success: true }));

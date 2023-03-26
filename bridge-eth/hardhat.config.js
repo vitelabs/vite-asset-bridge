@@ -15,6 +15,20 @@ module.exports = {
           "turtle siren orchard alpha indoor indicate wasp such waste hurt patient correct true firm goose elegant thunder torch hurt shield taste under basket burger",
       },
     },
+    rinkeby: {
+      url: "https://rinkeby.infura.io/v3/7d9b0a77df624ac498e5cec4306a5c6c",
+      accounts: {
+        mnemonic:
+          "turtle siren orchard alpha indoor indicate wasp such waste hurt patient correct true firm goose elegant thunder torch hurt shield taste under basket burger",
+      },
+    },
+    goerli: {
+      url: "https://goerli.infura.io/v3/7d9b0a77df624ac498e5cec4306a5c6c",
+      accounts: {
+        mnemonic:
+          "turtle siren orchard alpha indoor indicate wasp such waste hurt patient correct true firm goose elegant thunder torch hurt shield taste under basket burger",
+      },
+    },
     bsctest: {
       url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
       accounts: {
@@ -22,8 +36,15 @@ module.exports = {
           "turtle siren orchard alpha indoor indicate wasp such waste hurt patient correct true firm goose elegant thunder torch hurt shield taste under basket burger",
       },
     },
-    rinkeby: {
-      url: "https://rinkeby.infura.io/v3/7d9b0a77df624ac498e5cec4306a5c6c",
+    auroratest: {
+      url: "https://testnet.aurora.dev",
+      accounts: {
+        mnemonic:
+          "turtle siren orchard alpha indoor indicate wasp such waste hurt patient correct true firm goose elegant thunder torch hurt shield taste under basket burger",
+      },
+    },
+    polygontest: {
+      url: "https://polygon-mumbai.infura.io/v3/4458cf4d1689497b9a38b1d6bbf05e78",
       accounts: {
         mnemonic:
           "turtle siren orchard alpha indoor indicate wasp such waste hurt patient correct true firm goose elegant thunder torch hurt shield taste under basket burger",
