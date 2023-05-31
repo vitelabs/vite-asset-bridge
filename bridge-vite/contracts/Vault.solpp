@@ -37,6 +37,7 @@ struct Channel {
     uint256 maxValue;
     vitetoken erc20;
     uint256 keeperId;
+    bool status; // 0: abandoned 1: in use
 }
 
 struct MultiSigKeeper {
@@ -48,6 +49,7 @@ struct MultiSigKeeper {
 }
 
 contract Vault is IVault {
+    address private owner;
     Channel[] public channels;
 
     uint256 public numKeepers;
@@ -66,7 +68,13 @@ contract Vault is IVault {
     );
     event Output(uint256 channelId, uint256 index, bytes32 outputHash, address dest, uint256 value);
 
+    modifier ownerOnly() {
+        require(owner == msg.sender, "Caller is not owner");
+        _;
+    }
+
     constructor() {
+        owner = msg.sender;
     }
 
     function numChannels() public view returns (uint256){
@@ -84,6 +92,7 @@ contract Vault is IVault {
     function newChannel(vitetoken _erc20, address[] memory _keepers, uint8 _threshold, int8 _decimalDiff, uint256 _minValue, uint256 _maxValue)
         public
         override
+        ownerOnly
         returns (uint256)
     {
         bytes32 _inputHash = keccak256(
@@ -98,7 +107,7 @@ contract Vault is IVault {
         return newChannelWithHash(_erc20, _inputHash, _outputHash, keeperId, _decimalDiff, _minValue, _maxValue);
     }
 
-    function newKeepers(address[] memory _keepers, uint8 _threshold) public returns(uint256) {
+    function newKeepers(address[] memory _keepers, uint8 _threshold) public ownerOnly returns(uint256) {
         MultiSigKeeper storage r = keepers[numKeepers];
         r.threshold = _threshold;
         uint256 len = _keepers.length;
@@ -119,7 +128,7 @@ contract Vault is IVault {
         int8 _decimalDiff, 
         uint256 _minValue, 
         uint256 _maxValue
-    ) public returns (uint256) {
+    ) public ownerOnly returns (uint256) {
         channels.push(
             Channel({
                 inputId: 0,
@@ -130,7 +139,8 @@ contract Vault is IVault {
                 minValue: _minValue,
                 maxValue: _maxValue,
                 erc20: _erc20,
-                keeperId:_keeperId
+                keeperId:_keeperId,
+                status: true
             })
         );
         requireAndUpdateSpentHashes(_inputHash);
@@ -148,6 +158,7 @@ contract Vault is IVault {
     ) public payable override {
         Channel memory channel = channels[id];
 
+		require(channel.status, "the channel is abandoned!");
 		require(msg.value == value, "Transfer Value Require Failed.");
 		require(msg.token == channel.erc20, "Transfer Token Require Failed");
         require(value >= channel.minValue && value <= channel.maxValue, "value is illegal");
@@ -252,6 +263,11 @@ contract Vault is IVault {
 
     function outputApproved(uint256 keeperId, bytes32 outputHash, address keeper) public view returns(bool){
         return keepers[keeperId].approvedKeepers[outputHash][keeper];
+    }
+
+    function abandonChannel(uint256 id) public {
+        Channel storage channel = channels[id];
+        channel.status = false;
     }
 
 
